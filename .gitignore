@@ -7,3 +7,5 @@ logs/*
 static/layout/*
 *.lprof
 
+# Simulator
+**/*.stl
