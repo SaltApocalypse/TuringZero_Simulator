@@ -1,1 +1,1 @@
-from ui.boxes.SimulatorModule import SimulatorBox
+from . import SimulatorBox
