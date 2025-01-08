@@ -181,8 +181,18 @@ class Canvas2D:
 
     @contextmanager
     def draw(self, parent=None):
-        draw_tag = dpg.generate_uuid()
         if parent is None:
             parent = self.canvas_tag
         with dpg.draw_node(parent=parent) as draw_tag:
             yield draw_tag
+
+    def texture_register(self,size):
+        width, height = size
+        data = np.zeros((height, width, 4)).ravel().astype(np.float32) / 255.0
+        with dpg.texture_registry():
+            texture_id = dpg.add_raw_texture(width=width, height=height,default_value=data,format=dpg.mvFormat_Float_rgba)
+        return texture_id
+    def texture_update(self,texture_id, image):
+        image = image.ravel().astype(np.float32) / 255.0
+        dpg.set_value(texture_id, image)
+        

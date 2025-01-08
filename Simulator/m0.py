@@ -7,7 +7,7 @@ import PID_
 import pickle
 
 # import tbkpy
-from api.NewTBKApi import tbk_manager
+# from api.NewTBKApi import tbk_manager
 import tbkpy._core as tbkpy
 
 # import keyboard
@@ -33,8 +33,8 @@ setting["tbk_pub"] = False  # TBK 发送消息 default = True
 
 # ========== val ==========
 
-model = mujoco.MjModel.from_xml_path("./turingzero_agv/tz_agv.xml")
-# model = mujoco.MjModel.from_xml_path("./Simulator/turingzero_agv/tz_agv.xml")
+# model = mujoco.MjModel.from_xml_path("./turingzero_agv/tz_agv.xml")
+model = mujoco.MjModel.from_xml_path("./Simulator/turingzero_agv/tz_agv.xml")
 data = mujoco.MjData(model)
 spec = mujoco.MjSpec()
 

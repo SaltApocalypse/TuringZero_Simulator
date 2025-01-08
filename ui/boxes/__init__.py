@@ -27,9 +27,7 @@ modules_to_import = [
     ("ui.boxes.ConsoleBox", "ConsoleBox"),
     ("ui.boxes.InputConsoleBox", "InputConsoleBox"),
     ("ui.boxes.DemoBox", "DemoBox"),
-    ("ui.boxes.SimulatorSimulatorBox", "SimulatorSimulatorBox"),
-    ("ui.boxes.SimulatorUrdfviewerBox", "SimulatorUrdfviewerBox"),
-    ("ui.boxes.SimulatorWelcomeBox", "SimulatorWelcomeBox"),
+    ("ui.boxes.SimulatorModule", None),
 ]
 
 # 动态导入模块，绑定到全局作用域
