@@ -20,7 +20,7 @@ class SimulatorBox(BaseBox):
         self.lock = threading.Lock
 
     def create(self):
-        # self.canvas = CanvasMuJoCo(parent=self.tag, size=self.size, mj_model=self.mj_model, mj_data=self.mj_data)
+        self.canvas = CanvasMuJoCo(parent=self.tag, size=self.size, mj_model=self.mj_model, mj_data=self.mj_data)
         # with self.lock:
         self.depth_camera_canvas = CanvasMuJoCo(parent=self.tag, size=self.size, mj_model=self.mj_model, mj_data=self.mj_data)
 
@@ -36,5 +36,5 @@ class SimulatorBox(BaseBox):
         super().destroy()
 
     def update(self):
-        # self.canvas.update()
+        self.canvas.update()
         self.depth_camera_canvas.update()
