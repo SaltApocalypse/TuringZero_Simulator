@@ -1,8 +1,8 @@
 import mujoco
 
 # ========== 模型设置 ==========
-model = mujoco.MjModel.from_xml_path("./turingzero_agv/tz_agv.xml")
-data = mujoco.MjData(model)
+# model = mujoco.MjModel.from_xml_path("./turingzero_agv/tz_agv.xml")
+# data = mujoco.MjData(model)
 
 
 # ========== 频率设置 ==========
