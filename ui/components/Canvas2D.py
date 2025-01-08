@@ -181,7 +181,6 @@ class Canvas2D:
 
     @contextmanager
     def draw(self, parent=None):
-        draw_tag = dpg.generate_uuid()
         if parent is None:
             parent = self.canvas_tag
         with dpg.draw_node(parent=parent) as draw_tag:
