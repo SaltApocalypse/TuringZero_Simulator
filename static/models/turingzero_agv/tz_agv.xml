@@ -15,7 +15,6 @@
     </worldbody>
 
     <worldbody>
-        <!-- <body name="tz_agv" pos="0 0 0.0915" quat="0 1 0 0"> -->
         <body name="tz_agv" pos="0 0 0.0915" quat="0 0 0 1">
             <joint type="free" limited="false" actuatorfrclimited="false"/>
 
