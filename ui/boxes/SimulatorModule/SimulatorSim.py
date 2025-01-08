@@ -3,17 +3,14 @@ import threading
 import mujoco
 import mujoco.viewer
 
+import SimulatorParam
+
 # ========== val ==========
-model = mujoco.MjModel.from_xml_path("./turingzero_agv/tz_agv.xml")
-data = mujoco.MjData(model)
+model = SimulatorParam.model
+data = SimulatorParam.data
 
 # 全局退出事件
 exit_event = threading.Event()
-
-# 频率设置
-VIEWER_FREQ = 60  # 视觉刷新频率
-SIMULATION_FREQ = 1000  # 模拟频率
-SENSOR_FREQ = 50  # 传感器频率
 
 
 # ========== viewer ==========
@@ -21,7 +18,7 @@ def viewer_run():
     with mujoco.viewer.launch_passive(model, data) as viewer:
         while viewer.is_running() and not exit_event.is_set():
             viewer.sync()
-            time.sleep(1 / VIEWER_FREQ)
+            time.sleep(1 / SimulatorParam.VIEWER_FREQ)
         exit_event.set()
 
 
@@ -51,7 +48,7 @@ class SimulationThread(threading.Thread):
         while self.run_event.is_set() and not self.exit_event.is_set():
             # TODO: 在这里接受来自TBK的命令
             mujoco.mj_step(self.model, self.data)
-            time.sleep(1 / SIMULATION_FREQ)
+            time.sleep(1 / SimulatorParam.SIMULATION_FREQ)
 
     def stop(self):
         self.run_event.clear()
@@ -72,7 +69,7 @@ class SensorThread(threading.Thread):
 
         while self.run_event.is_set() and not self.exit_event.is_set():
             # TODO: 发送数据
-            time.sleep(1 / SENSOR_FREQ)
+            time.sleep(1 / SimulatorParam.SENSOR_FREQ)
 
     def stop(self):
         self.run_event.clear()
