@@ -116,26 +116,3 @@ class PositionPID:
         self.integral = 0.0
         self.output = 0.0
 
-
-def motor2self(vx, vy, w):
-    L = 1000
-    theta1 = math.pi / 3
-    theta2 = math.pi / 6
-    V = np.array(
-        [
-            [math.cos(w), math.sin(w), L],
-            [
-                -math.cos(theta1) * math.cos(w) + math.sin(theta1) * math.sin(w),
-                -math.cos(theta1) * math.sin(w) - math.sin(theta1) * math.cos(w),
-                L,
-            ],
-            [
-                -math.sin(theta2) * math.cos(w) - math.cos(theta2) * math.sin(w),
-                -math.sin(theta2) * math.sin(w) + math.cos(theta2) * math.cos(w),
-                L,
-            ],
-        ]
-    )
-    result = V @ np.array([vx, vy, w]).transpose()
-
-    return result
