@@ -9,3 +9,4 @@ static/layout/*
 
 # Simulator
 **/*.stl
+**/MUJOCO_LOG.TXT

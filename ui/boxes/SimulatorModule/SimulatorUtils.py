@@ -1,5 +1,8 @@
 import math
 import numpy as np
+import cv2
+import glfw
+import mujoco
 
 
 class PositionPID:
@@ -78,3 +81,73 @@ def velocity_to_wheel(vx: int, vy: int, w: int):
     result = V @ np.array([vx, vy, w]).transpose()
 
     return result
+
+
+# ========== RGBD_Camera ==========
+class RGBDCamera:
+    def __init__(self):
+        self._color_buffer = None
+        self._depth_buffer = None
+        self._color_image = None
+        self._depth_image = None
+        # OpenGl render rage
+        self._entent = None
+        self._z_near = None
+        self._z_far = None
+        # Camera
+        self._f = None  # focal length
+        self._cx = None  # principal points
+        self._cy = None
+
+    def _linearize_depth(self, depth):
+        """
+        将 OpenGL 的非线性深度缓冲区转换为线性深度图，以米为单位
+
+        @param
+        - depth: OpenGL depth buffer (nonlinearized)
+
+        @return
+        - depth image in meters
+        """
+        depth_img = np.zeros_like(depth, dtype=np.float32)
+
+        if self._z_near is None or self._z_far is None or self._extent is None:
+            return -1
+
+        depth_img = self._z_near * self._z_far * self._entent / (self._z_far - depth * (self._z_far - self._z_near))
+        return depth_img
+
+    # def set_camera_intrinsics(model, camera, viewport):
+    #     fovy = model.cam_fovy[camera.fixedcamid] / 180 * math.pi / 2
+
+    #     # focal length, fx = fy
+    #     f = viewport.height / 2 / math.tan(fovy)
+    #     # principal points
+    #     cx = viewport.width / 2
+    #     cy = viewport.height / 2
+
+    #     return f, cx, cy
+
+
+def init_rgbd_camera(model, camera_name):
+    rgbd_camera = mujoco.mjvCamra(type=mujoco.mjCAMERA_FIXED, fixedcamid=mujoco.mj_name2id(model, mujoco.mjOBJ_CAMERA, camera_name))
+
+    sensor_option: mujoco.mjvOption = None
+    sensor_perturb: mujoco.mjvPerturb = None
+    sensor_scene: mujoco.mjvScene = None
+    sensor_context: mujoco.mjrContext = None
+
+    mujoco.mjv_defaultOption(sensor_option)
+    mujoco.mjv_defaultScene(sensor_scene)
+    mujoco.mjr_defaultContext(sensor_context)
+
+    mujoco.mjv_makeScene(model, sensor_scene, 1000)
+    mujoco.mjr_makeContext(model, sensor_context, mujoco.mjFONTSCALE_150)
+
+    mj_RGBD = RGBDCamera()
+
+    # ===========================
+    viewport = mujoco.mjrRect(0, 0, 0, 0)
+    mj_RGBD.set_camera_intrinsics(model, mj_RGBD, viewport)
+    mujoco.mjv_updateScene()
+    # TODO:
