@@ -19,4 +19,5 @@ class SimulatorBox(BaseBox):
         super().destroy()
 
     def update(self):
+
         self.canvas.update()
