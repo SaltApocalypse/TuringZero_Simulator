@@ -206,7 +206,5 @@
         <motor name="left_wheel_torque" joint="left_wheel_rolling_joint" ctrlrange="-5 5" />
         <motor name="right_wheel_torque" joint="right_wheel_rolling_joint" ctrlrange="-5 5" />
     </actuator>
-    <visual>
-        <global offwidth="1280" offheight="720"/>
-    </visual>
+
 </mujoco>
