@@ -4,6 +4,7 @@ import dearpygui.dearpygui as dpg
 from ui.boxes.BaseBox import BaseBox
 from ui.components.CanvasMuJoCo import CanvasMuJoCo
 from ui.boxes.SimulatorModule.SimulatorParam import *
+import ui.boxes.SimulatorModule.SimulatorUtils as SimulatorUtils
 import mujoco
 import threading
 
@@ -20,17 +21,12 @@ class SimulatorBox(BaseBox):
 
     def create(self):
         self.canvas = CanvasMuJoCo(parent=self.tag, size=self.size, mj_model=self.mj_model, mj_data=self.mj_data)
-
-        camera_id = [
-            mujoco.mj_name2id(self.mj_model, mujoco.mjtObj.mjOBJ_CAMERA, "front_camera"),
-            mujoco.mj_name2id(self.mj_model, mujoco.mjtObj.mjOBJ_CAMERA, "left_camera"),
-            mujoco.mj_name2id(self.mj_model, mujoco.mjtObj.mjOBJ_CAMERA, "right_camera"),
-        ]
-
-        print(self.mj_model.cam_pos[camera_id[1]])
+        print(SimulatorUtils.get_info_jointstate(self.mj_model, self.mj_data))
 
     def destroy(self):
         super().destroy()
 
     def update(self):
         self.canvas.update()
+        # imu = SimulatorUtils.get_info_imu(self.mj_model, self.mj_data)
+        # print(imu)

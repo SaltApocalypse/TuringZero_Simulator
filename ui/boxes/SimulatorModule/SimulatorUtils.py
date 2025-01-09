@@ -1,8 +1,7 @@
 import math
 import numpy as np
-import cv2
-import glfw
 import mujoco
+import xml.etree.ElementTree as xml_et
 
 
 class PositionPID:
@@ -83,71 +82,129 @@ def velocity_to_wheel(vx: int, vy: int, w: int):
     return result
 
 
-# ========== RGBD_Camera ==========
-class RGBDCamera:
-    def __init__(self):
-        self._color_buffer = None
-        self._depth_buffer = None
-        self._color_image = None
-        self._depth_image = None
-        # OpenGl render rage
-        self._entent = None
-        self._z_near = None
-        self._z_far = None
-        # Camera
-        self._f = None  # focal length
-        self._cx = None  # principal points
-        self._cy = None
+# ========== 获取信息  ========== #
+def get_info_imu(model: mujoco.MjModel, data: mujoco.MjData, name: str, inOneList: bool = True):
+    """
+    获取IMU信息并返回：
+    - 姿态：没有专门的姿态测量仪，取自`mujoco.MjData`的全局物体姿态
+    - 角速度：取自角速度计
+    - 线性加速器：取自加速度计
 
-    def _linearize_depth(self, depth):
-        """
-        将 OpenGL 的非线性深度缓冲区转换为线性深度图，以米为单位
+    @param
+    - model
+    - data
+    - name: 需要查看的物体
+    - inOneList: 是否把数据在同一个数组里，默认`true`；否则分为三个数组
 
-        @param
-        - depth: OpenGL depth buffer (nonlinearized)
+    @return
+    - list[10]:
+        - [0:4]: orientation
+        - [4:7]: angular_velocity
+        - [7:10]: linear_acceleration
 
-        @return
-        - depth image in meters
-        """
-        depth_img = np.zeros_like(depth, dtype=np.float32)
+    or
 
-        if self._z_near is None or self._z_far is None or self._extent is None:
-            return -1
+    - list[3]:
+        - [0]: orientation[4]
+        - [1]: angular_velocity[3]
+        - [2]: linear_acceleration[3]
+    """
+    acc = data.sensordata[0:3]
+    gyro = data.sensordata[3:6]
+    # vel = data.sensordata[6:]
 
-        depth_img = self._z_near * self._z_far * self._entent / (self._z_far - depth * (self._z_far - self._z_near))
-        return depth_img
+    # TODO: 考虑自定义提供名称批量获取
+    id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, name)
 
-    # def set_camera_intrinsics(model, camera, viewport):
-    #     fovy = model.cam_fovy[camera.fixedcamid] / 180 * math.pi / 2
-
-    #     # focal length, fx = fy
-    #     f = viewport.height / 2 / math.tan(fovy)
-    #     # principal points
-    #     cx = viewport.width / 2
-    #     cy = viewport.height / 2
-
-    #     return f, cx, cy
+    if inOneList:
+        return [data.xquat[id][0], data.xquat[id][1], data.xquat[id][2], gyro[0], gyro[1], gyro[2], acc[0], acc[1], acc[2]]
+    return [data.xquat[id], gyro, acc]
 
 
-def init_rgbd_camera(model, camera_name):
-    rgbd_camera = mujoco.mjvCamra(type=mujoco.mjCAMERA_FIXED, fixedcamid=mujoco.mj_name2id(model, mujoco.mjOBJ_CAMERA, camera_name))
+def get_info_actor(model: mujoco.MjModel, data: mujoco.MjData, name=None):
+    """
+    获取电机数据并返回：
+    - 电机名称
+    - 所述物体
+    - 电机扭矩`(torque)`大小
 
-    sensor_option: mujoco.mjvOption = None
-    sensor_perturb: mujoco.mjvPerturb = None
-    sensor_scene: mujoco.mjvScene = None
-    sensor_context: mujoco.mjrContext = None
+    @param
+    - model
+    - data
+    - name: 需要查找的 actor 名字或名字列表
 
-    mujoco.mjv_defaultOption(sensor_option)
-    mujoco.mjv_defaultScene(sensor_scene)
-    mujoco.mjr_defaultContext(sensor_context)
+    @return
+    - list[3]:
+        - [0]: actor 的名字
+        - [1]: actor 附身的 joint
+        - [2]: actor 的扭矩`torque`
+    """
+    if name is not None and type(name) is not list:
+        name = [name]
 
-    mujoco.mjv_makeScene(model, sensor_scene, 1000)
-    mujoco.mjr_makeContext(model, sensor_context, mujoco.mjFONTSCALE_150)
+    res = []
 
-    mj_RGBD = RGBDCamera()
+    if name is None:  # 如果没有提供范围，自动获取所有的 actor
+        for _id in range(model.nu):
+            res.append(
+                [
+                    model.actuator(_id).name,
+                    model.joint(model.actuator_trnid[_id][0]).name,
+                    data.ctrl[_id],
+                ]
+            )
+    else:
+        for _name in range(len(name)):
+            _id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, name[_name])
+            res.append(
+                [
+                    name[_id],
+                    model.joint(model.actuator_trnid[_id][0]).name,
+                    data.ctrl[_id],
+                ]
+            )
 
-    # ===========================
-    viewport = mujoco.mjrRect(0, 0, 0, 0)
-    mj_RGBD.set_camera_intrinsics(model, mj_RGBD, viewport)
-    mujoco.mjv_updateScene()
-    # TODO:
+    return res
+
+
+def get_info_jointstate(model: mujoco.MjModel, data: mujoco.MjData, name=None):
+    """
+    获取关节数据并返回：
+    - 关节名称
+    - 关节位置
+    - 关节速度
+    - 关节效果
+
+    @param
+    - model
+    - data
+    - name: 需要查找的 joint 名字或名字列表
+
+    @return
+    - list[3]:
+        - [0] str: joint 的名字
+        - [1] list: joint 的位置
+        - [2] float: joint 的速度
+        - [3] float: joint 的力/力矩
+    """
+    if name is not None and type(name) is not list:
+        name = [name]
+
+    res = []
+
+    if name is None:  # 如果没有提供范围，自动获取所有的 joint
+        for _id in range(model.njnt):
+            bodyid = model.jnt_bodyid[_id]
+            print(model.jnt_qposadr[_id])
+            res.append(
+                [
+                    model.joint(_id).name,
+                    model.jnt_qposadr[_id],
+                ]
+            )
+    else:
+        for _name in range(len(name)):
+            _id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name[_name])
+            res.append([])
+
+    return res

@@ -3,6 +3,7 @@ This file was modified from "unitreerobotics/unitree_mujoco"
 Repo: https://github.com/unitreerobotics/unitree_mujoco/tree/main/terrain_tool
 """
 
+from os.path import dirname, join
 import xml.etree.ElementTree as xml_et
 import numpy as np
 import cv2
@@ -238,11 +239,11 @@ def get_random_position(size):
 
 
 if __name__ == "__main__":
-    folder_path = "../../../static/models/turingzero_agv/"
+    folder_path = join(dirname(__file__) + "/../../../static/models/turingzero_agv/")
     model_path = folder_path + "tz_agv.xml"
     output_path = folder_path + "scene_terrain.xml"
 
-    POS_ORIGIN = [0.0, 0.0, 0.0]
+    POS_ORIGIN = [0.0, 0.0, -0.1]
     NUM_MAXLEN = 5
     NUM_MAXOBJS = NUM_MAXLEN ^ 2
 

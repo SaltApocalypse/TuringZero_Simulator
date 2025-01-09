@@ -10,18 +10,14 @@
     </asset>
 
     <worldbody>
-        <light pos="0.9 0.9 2.5" dir="-0.320815 -0.320815 -0.891154" directional="true" cutoff="4" exponent="20" diffuse="1 1 1" specular="0 0 0" />
-    </worldbody>
+        <body name="tz_agv" pos="0 0 0.0915">
+            <joint name="body_free_joint" type="free" limited="false" actuatorfrclimited="false" />
 
-    <worldbody>
-        <body name="tz_agv" pos="0 0 0.0915" quat="0 0 0 1">
-            <joint type="free" limited="false" actuatorfrclimited="false" />
-
-            <geom name="head_marker" type="box" size="0.02 0.02 0.02" rgba="0 1 0 1" contype="1" conaffinity="0" group="1" pos="0.0 -0.2385 0.028" />
+            <geom name="head_marker" type="box" size="0.02 0.02 0.02" rgba="0 1 0 1" contype="1" conaffinity="0" group="1" pos="0.0 0.2385 0.028" quat="0 0 0 1" />
             <camera name="front_camera" pos="0 0 0.03" quat="0 0 0.707 0.707" fovy="120" />
 
-            <site name="IMU" pos="0 0 0" quat="1 0 0 0" />
-            <body name="base" pos="0 0 0">
+            <site name="IMU" pos="0 0 0" quat="0 0 0 1" />
+            <body name="base" pos="0 0 0" quat="0 0 0 1">
                 <inertial pos="0 0 0" mass="5" diaginertia="1 1 1" />
                 <geom type="mesh" rgba="0.762 0.762 0.762 1" mesh="base" contype="1" conaffinity="0" group="1" />
 
