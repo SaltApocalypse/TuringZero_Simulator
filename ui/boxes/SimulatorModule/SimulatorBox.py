@@ -16,7 +16,7 @@ class SimulatorBox(BaseBox):
     def __init__(self, ui, **kwargs):
         super().__init__(ui, **kwargs)
         self.size = (600, 400)
-        self.mj_model = mujoco.MjModel.from_xml_path('static/models/turingzero_agv/tz_agv_with_cameras.xml')
+        self.mj_model = mujoco.MjModel.from_xml_path('static/models/turingzero_agv/tz_agv_with_plane.xml')
         self.mj_data = mujoco.MjData(self.mj_model)
         self.tf_euler = "0,0,0"
         self.tf_order = "YXZ"
@@ -50,6 +50,7 @@ class SimulatorBox(BaseBox):
         
         # Apply the rotation to the yaw (first element, euler[0]) and normalize it into [0, 2π]
         euler = ((euler[0] + radians) % (2 * np.pi), *euler[1:])
+
         # Update the camera's quaternion with the new euler angles
         self.mj_model.cam_quat[self.now_camera] = la.quat_from_euler(euler, order="YXZ")
 
@@ -64,7 +65,7 @@ class SimulatorBox(BaseBox):
 
     def update(self):
 
-        self.rotate_camera_by_degrees(1)
+        # self.rotate_camera_by_degrees(1)
 
         non_linear_depth_buffer = self.canvas.frame_depth[:, :, 0]
         linear_depth_buffer = st.nonlinear_to_linear_depth(non_linear_depth_buffer,0.1,10)
@@ -72,7 +73,8 @@ class SimulatorBox(BaseBox):
         linear_depth_normalized = linear_depth_normalized.astype(np.uint8)  # 转为 8 位图像
         intrinsic_matrix = st.compute_intrinsic_matrix(self.mj_model.cam_intrinsic[self.now_camera])
         view_matrix = st.compute_view_matrix(self.mj_model.cam_pos[self.now_camera],self.mj_model.cam_quat[self.now_camera])
-        points = st.depth_to_world(linear_depth_buffer,intrinsic_matrix,view_matrix,0.1,10,0.2,(self.tf_euler,self.tf_order))
+        # points = st.depth_to_world(linear_depth_buffer,intrinsic_matrix,view_matrix,0.1,10,0.2,(self.tf_euler,self.tf_order))
+        points = st.depth_to_world(linear_depth_buffer,intrinsic_matrix,view_matrix,0.1,10)
         cv2.imshow("Linear Depth Map", linear_depth_normalized)
         cv2.waitKey(1)
         batch_size = 5000

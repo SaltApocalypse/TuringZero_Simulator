@@ -17,17 +17,21 @@ def nonlinear_to_linear_depth(non_linear_depth, z_near, z_far):
     return linear_depth
 
 
-def depth_to_world(linear_depth_buffer, intrinsic_matrix, view_matrix, z_near, z_far, keep_ratio=0.2,user_data = None):
+def depth_to_world(linear_depth_buffer, intrinsic_matrix, view_matrix, z_near=0.1, z_far=10, keep_ratio=0.2, user_data=None):
     """
-    将线性深度缓冲转换为世界坐标，并随机保留部分点（在一开始降采样以减少计算量）
+    将线性深度缓冲转换为世界坐标，并随机保留部分点（在一开始降采样以减少计算量）。
+    同时实现像素归一化到标准化设备坐标 (NDC)，范围为 [-1, 1]。
+    
     :param linear_depth_buffer: 深度缓冲 (H, W)，值范围 [0, 1]
     :param intrinsic_matrix: 相机内参矩阵 (3, 3)
     :param view_matrix: 视图矩阵 (4, 4)
     :param z_near: 近裁剪面
     :param z_far: 远裁剪面
     :param keep_ratio: 保留点的比例 (0, 1)
+    :param user_data: 用户自定义旋转信息（欧拉角和旋转顺序）
     :return: 世界坐标点云 (N, 3)，其中 N 为有效像素的个数
     """
+    
     # 获取深度缓冲的宽度和高度
     H, W = linear_depth_buffer.shape
 
@@ -45,15 +49,17 @@ def depth_to_world(linear_depth_buffer, intrinsic_matrix, view_matrix, z_near, z
     # 将深度缓冲值从 [0, 1] 转换为真实的深度值
     sampled_depth = z_near + sampled_depth_buffer * (z_far - z_near)
 
-    # 将采样的像素坐标转换为相机坐标系下的齐次归一化设备坐标 (NDC)
+    # 将采样的像素坐标转换为标准化设备坐标 (NDC)，范围 [-1, 1]
     fx, fy = intrinsic_matrix[0, 0], intrinsic_matrix[1, 1]
     cx, cy = intrinsic_matrix[0, 2], intrinsic_matrix[1, 2]
-    camera_x = (sampled_x - cx) / fx
-    camera_y = (sampled_y - cy) / fy
-    camera_z = sampled_depth
+    
+    # 映射到 NDC 范围 [-1, 1]
+    ndc_x = (sampled_x - cx) / (fx / (W / 2))  # 转换为 [-1, 1]
+    ndc_y = (sampled_y - cy) / (fy / (H / 2))  # 转换为 [-1, 1]
+    ndc_z = sampled_depth  # 深度值不变，保持在 [0, 1]（或实际深度）
 
     # 将采样的像素坐标堆叠成 3D 点云 (N, 3)
-    camera_points = np.stack([camera_x * sampled_depth, camera_y * sampled_depth, camera_z], axis=-1)
+    camera_points = np.stack([ndc_x * sampled_depth, ndc_y * sampled_depth, ndc_z], axis=-1)
 
     # 将相机坐标系下的点云转换到世界坐标系
     # 首先将点扩展为齐次坐标 (N, 4)
@@ -65,20 +71,19 @@ def depth_to_world(linear_depth_buffer, intrinsic_matrix, view_matrix, z_near, z
     # 将点云从相机坐标系转换到世界坐标系
     world_points_homogeneous = camera_points_homogeneous @ inverse_view_matrix.T
     
-    
-    # rot_mat = la.mat_from_euler([-np.pi / 2, -np.pi / 2],order="YX")
     if user_data is not None:
-        euler,order = user_data
+        euler, order = user_data
         num = euler.split(",")
         for i in range(len(num)):
             num[i] = float(num[i])
-        rot_mat = la.mat_from_euler(num,order=order)
+        rot_mat = la.mat_from_euler(num, order=order)
         world_points_homogeneous = world_points_homogeneous @ rot_mat
 
     # 去掉齐次坐标，得到世界坐标 (N, 3)
     world_points = world_points_homogeneous[..., :3]
     
     return world_points
+
 
 
 def compute_intrinsic_matrix(cam_intrinsic):
