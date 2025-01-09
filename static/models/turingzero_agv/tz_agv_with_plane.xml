@@ -18,11 +18,8 @@
         <body name="tz_agv" pos="0 0 0.0915" quat="0 0 0 1">
             <joint type="free" limited="false" actuatorfrclimited="false" />
 
-            <geom type="box" size="0.02 0.02 0.02" rgba="0 1 0 1" contype="1" conaffinity="0" group="1" pos="0.0 -0.2385 0.028" />
-
+            <geom name="head_marker" type="box" size="0.02 0.02 0.02" rgba="0 1 0 1" contype="1" conaffinity="0" group="1" pos="0.0 -0.2385 0.028" />
             <camera name="front_camera" pos="0 0 0.03" quat="0 0 0.707 0.707" fovy="120" />
-            <camera name="left_camera" pos="0 0 0.03" quat="0.612 0.612 -0.354 -0.354" fovy="120" />
-            <camera name="right_camera" pos="0 0 0.03" quat="0.612 0.612 0.354 0.354" fovy="120" />
 
             <site name="IMU" pos="0 0 0" quat="1 0 0 0" />
             <body name="base" pos="0 0 0">
