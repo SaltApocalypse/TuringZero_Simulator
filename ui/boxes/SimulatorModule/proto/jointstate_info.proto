@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package simulator;
+
+message JointStateInfo {
+    string joint_name = 1;
+
+    message Position {
+        float x = 1;
+        float y = 2;
+        float z = 3;
+    }
+
+    message Velocity {
+        float angular = 1;
+        float linear = 2;
+    }
+
+    Position position = 2;
+    Velocity velocity = 3;
+    float effort = 4; // Placeholder for future implementation
+} 
