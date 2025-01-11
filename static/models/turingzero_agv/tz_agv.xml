@@ -10,6 +10,7 @@
     </asset>
 
     <worldbody>
+        <light name="point_light" pos="0 0 1" dir="0 0 -1" diffuse="1 1 1" specular="0.1 0.1 0.1" />
         <body name="tz_agv" pos="0 0 0.0915">
             <joint name="body_free_joint" type="free" limited="false" actuatorfrclimited="false" />
 

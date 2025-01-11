@@ -117,7 +117,7 @@ def get_info_imu(model: mujoco.MjModel, data: mujoco.MjData, name: str, inOneLis
     id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, name)
 
     if inOneList:
-        return [data.xquat[id][0], data.xquat[id][1], data.xquat[id][2], gyro[0], gyro[1], gyro[2], acc[0], acc[1], acc[2]]
+        return [data.xquat[id][0], data.xquat[id][1], data.xquat[id][2], data.xquat[id][3], gyro[0], gyro[1], gyro[2], acc[0], acc[1], acc[2]]
     return [data.xquat[id], gyro, acc]
 
 
@@ -183,28 +183,44 @@ def get_info_jointstate(model: mujoco.MjModel, data: mujoco.MjData, name=None):
     @return
     - list[3]:
         - [0] str: joint 的名字
-        - [1] list: joint 的位置
-        - [2] float: joint 的速度
-        - [3] float: joint 的力/力矩
+        - [1] list[3]: joint 的位置
+        - [2] list[6]: joint 的速度 (rot:lin 角速度:线速度)
+        - [3] float: joint 的力/力矩 (x 还没搞定)
     """
     if name is not None and type(name) is not list:
         name = [name]
 
     res = []
 
+    id = []
+    # id.extend(range(model.njnt) if name is None else mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, _name) for _name in name)
     if name is None:  # 如果没有提供范围，自动获取所有的 joint
-        for _id in range(model.njnt):
-            bodyid = model.jnt_bodyid[_id]
-            print(model.jnt_qposadr[_id])
-            res.append(
-                [
-                    model.joint(_id).name,
-                    model.jnt_qposadr[_id],
-                ]
-            )
+        id.extend(range(model.njnt))
     else:
         for _name in range(len(name)):
-            _id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name[_name])
-            res.append([])
+            id.append(mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name[_name]))
+
+    for _id in id:
+        bodyid = model.joint(_id).bodyid[0]
+        res.append(
+            [
+                model.joint(_id).name,
+                data.xpos[bodyid],
+                data.cvel[bodyid],  # rot:lin 角速度:线速度
+                # 缺少
+            ]
+        )
 
     return res
+
+
+def get_info_img():
+    pass  # TODO:
+
+
+def get_info_rgb_camera():
+    pass  # TODO:
+
+
+def get_info_depth_camera():
+    pass  # TODO:

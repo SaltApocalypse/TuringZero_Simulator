@@ -10,8 +10,9 @@
     <hfield name="perlin_hfield" size="5.0 5.0 0.5 0.5" file="../height_field.png" /></asset>
 
     <worldbody>
+        <light name="point_light" pos="0 0 1" dir="0 0 -1" diffuse="1 1 1" specular="0.1 0.1 0.1" />
         <body name="tz_agv" pos="0 0 0.0915">
-            <joint type="free" limited="false" actuatorfrclimited="false" />
+            <joint name="body_free_joint" type="free" limited="false" actuatorfrclimited="false" />
 
             <geom name="head_marker" type="box" size="0.02 0.02 0.02" rgba="0 1 0 1" contype="1" conaffinity="0" group="1" pos="0.0 0.2385 0.028" quat="0 0 0 1" />
             <camera name="front_camera" pos="0 0 0.03" quat="0 0 0.707 0.707" fovy="120" />
@@ -187,7 +188,7 @@
 
             </body>
         </body>
-    <geom type="hfield" hfield="perlin_hfield" pos="0.0 0.0 -0.1" quat="1.0 0.0 0.0 0.0" /><geom pos="-2.628756884720016 2.3765001101684167 0" type="cylinder" size="1.0202252545063337 1.4301224748142316" quat="1.0 0.0 0.0 0.0" /></worldbody>
+    <geom type="hfield" hfield="perlin_hfield" pos="0.0 0.0 -0.1" quat="1.0 0.0 0.0 0.0" /><geom pos="3.5823507434986297 1.5874918934260447 0" type="cylinder" size="1.1243880419695946 0.8788772901308859" quat="1.0 0.0 0.0 0.0" /><geom pos="-0.5380750586833893 3.6379952892165517 0" type="cylinder" size="2.4039238778544747 0.3484726987700351" quat="1.0 0.0 0.0 0.0" /><geom pos="-0.4511611565541901 3.397233597930724 0" type="cylinder" size="0.8474145079014672 1.4374246055441828" quat="1.0 0.0 0.0 0.0" /><geom pos="-4.43013388231481 -3.667393032061263 0" type="cylinder" size="1.242752216404641 0.8987684975088078" quat="1.0 0.0 0.0 0.0" /><geom pos="-0.0054078732586487765 3.071152519862128 0" type="cylinder" size="1.322222798039876 2.277156408482294" quat="1.0 0.0 0.0 0.0" /><geom pos="0 5 4" type="box" size="6.0 0.01 4.0" quat="1.0 0.0 0.0 0.0" /><geom pos="0 -5 4" type="box" size="6.0 0.01 4.0" quat="1.0 0.0 0.0 0.0" /><geom pos="5 0 4" type="box" size="0.01 6.0 4.0" quat="1.0 0.0 0.0 0.0" /><geom pos="-5 0 4" type="box" size="0.01 6.0 4.0" quat="1.0 0.0 0.0 0.0" /><geom pos="0 0 8" type="box" size="6.0 6.0 0.01" quat="1.0 0.0 0.0 0.0" /></worldbody>
 
     <sensor>
         <accelerometer name="acc" site="IMU" />

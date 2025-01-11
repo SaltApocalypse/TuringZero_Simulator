@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package simulator;
+
+message IMUInfo {
+    message Orientation {
+        float w = 1;
+        float x = 2;
+        float y = 3;
+        float z = 4;
+    }
+
+    message AngularVelocity {
+        float x = 1;
+        float y = 2;
+        float z = 3;
+    }
+
+    message LinearAcceleration {
+        float x = 1;
+        float y = 2;
+        float z = 3;
+    }
+
+    Orientation orientation = 1;
+    AngularVelocity angular_velocity = 2;
+    LinearAcceleration linear_acceleration = 3;
+} 

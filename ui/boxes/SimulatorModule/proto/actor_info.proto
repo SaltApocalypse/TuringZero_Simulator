@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package simulator;
+
+message ActorInfo {
+    string actor_name = 1;
+    string joint_name = 2;
+    float torque = 3;
+} 

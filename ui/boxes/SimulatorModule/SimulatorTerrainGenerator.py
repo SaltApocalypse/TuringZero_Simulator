@@ -107,6 +107,15 @@ class TerrainGenerator:
         quat = euler_to_quat(euler[0], euler[1], euler[2])
         geo.attrib["quat"] = list_to_str(quat)
 
+    # Add Box to scene
+    def AddBox(self, position=[1.0, 0.0, 0.0], euler=[0.0, 0.0, 0.0], size=[0.1, 0.1, 0.1]):
+        geo = xml_et.SubElement(self.worldbody, "geom")
+        geo.attrib["pos"] = list_to_str(position)
+        geo.attrib["type"] = "box"
+        geo.attrib["size"] = list_to_str(0.5 * np.array(size))  # half size of box for mujoco
+        quat = euler_to_quat(euler[0], euler[1], euler[2])
+        geo.attrib["quat"] = list_to_str(quat)
+
     def AddStairs(self, init_pos=[1.0, 0.0, 0.0], yaw=0.0, width=0.2, height=0.15, length=1.5, stair_nums=10):
 
         local_pos = [0.0, 0.0, -0.5 * height]
@@ -254,6 +263,12 @@ if __name__ == "__main__":
     num = random.randint(1, NUM_MAXOBJS)
     for i in range(num):
         tg.AddGeometry(position=get_random_position(NUM_MAXLEN), size=[random.random() * 5, random.random() * 5], geo_type="cylinder")
+
+    tg.AddBox([0, 5, 4], size=[12, 0.02, 8])
+    tg.AddBox([0, -5, 4], size=[12, 0.02, 8])
+    tg.AddBox([5, 0, 4], size=[0.02, 12, 8])
+    tg.AddBox([-5, 0, 4], size=[0.02, 12, 8])
+    tg.AddBox([0, 0, 8], size=[12, 12, 0.02])
 
     tg.Save(output_path)
 
