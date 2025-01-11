@@ -1,35 +1,4 @@
-import mujoco
-
-# ========== 模型设置 ==========
-# model = mujoco.MjModel.from_xml_path("./turingzero_agv/tz_agv.xml")
-# data = mujoco.MjData(model)
-
-
 # ========== 频率设置 ==========
 VIEWER_FREQ = 60  # 视觉刷新频率
 SIMULATION_FREQ = 1000  # 模拟频率
 SENSOR_FREQ = 50  # 传感器频率
-
-# ========== 其他内容 ==========
-free_body_MJCF = """
-<mujoco>
-  <asset>
-    <texture name="grid" type="2d" builtin="checker" rgb1=".1 .2 .3"
-    rgb2=".2 .3 .4" width="300" height="300" mark="edge" markrgb=".2 .3 .4"/>
-    <material name="grid" texture="grid" texrepeat="2 2" texuniform="true"
-    reflectance=".2"/>
-  </asset>
-
-  <worldbody>
-    <light pos="0 0 1" mode="trackcom"/>
-    <geom name="ground" type="plane" pos="0 0 -.5" size="2 2 .1" material="grid" solimp=".99 .99 .01" solref=".001 1"/>
-    <body name="box_and_sphere" pos="0 0 0">
-      <freejoint/>
-      <geom name="red_box" type="box" size=".1 .1 .1" rgba="1 0 0 1" solimp=".99 .99 .01"  solref=".001 1"/>
-      <geom name="green_sphere" size=".06" pos=".1 .1 .1" rgba="0 1 0 1"/>
-      <camera name="fixed" pos="0 -.6 .3" xyaxes="1 0 0 0 1 2"/>
-      <camera name="track" pos="0 -.6 .3" xyaxes="1 0 0 0 1 2" mode="track"/>
-    </body>
-  </worldbody>
-</mujoco>
-"""

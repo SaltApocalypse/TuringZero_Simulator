@@ -11,96 +11,74 @@ def nonlinear_to_linear_depth(non_linear_depth, z_near, z_far):
     :param z_far: 远平面距离
     :return: 线性深度值
     """
-    
+
     # 使用公式进行转换
     linear_depth = (2.0 * z_near * z_far) / (z_far + z_near - non_linear_depth * (z_far - z_near))
     return linear_depth
 
+def camera_matrix(size,fovy):
+    width, height = size
+    f = 0.5 * height / np.tan(fovy * np.pi / 360)
+    res = np.array(((-f, 0, width / 2), (0, f, height / 2), (0, 0, 1)))
+    return res
 
-def depth_to_world(linear_depth_buffer, intrinsic_matrix, view_matrix, z_near=0.1, z_far=10, keep_ratio=0.2, user_data=None):
+def depth_to_point_cloud(linear_depth_map, fovy, quat, pos, kppe_rate=0.001):
     """
-    将线性深度缓冲转换为世界坐标，并随机保留部分点（在一开始降采样以减少计算量）。
-    同时实现像素归一化到标准化设备坐标 (NDC)，范围为 [-1, 1]。
-    
-    :param linear_depth_buffer: 深度缓冲 (H, W)，值范围 [0, 1]
-    :param intrinsic_matrix: 相机内参矩阵 (3, 3)
-    :param view_matrix: 视图矩阵 (4, 4)
-    :param z_near: 近裁剪面
-    :param z_far: 远裁剪面
-    :param keep_ratio: 保留点的比例 (0, 1)
-    :param user_data: 用户自定义旋转信息（欧拉角和旋转顺序）
-    :return: 世界坐标点云 (N, 3)，其中 N 为有效像素的个数
+    将深度图转换为3D点云
+
+    :param linear_depth_map: 线性深度图 (H, W)，值范围为 0 到 1
+    :param fovy: 垂直视场角 (单位: 度)
+    :param quat: 相机的四元数姿态
+    :param pos: 相机的位置 (3,)
+    :param kppe_rate: 保留点的比例，范围为 0 到 1，默认为 1.0 (保留所有点)
+    :return: 3D点云 (N, 3)，N 为点的数量
     """
-    
-    # 获取深度缓冲的宽度和高度
-    H, W = linear_depth_buffer.shape
+    # 获取图像宽度和高度
+    height, width = linear_depth_map.shape  # 注意这里的顺序
 
-    # 根据保留比例随机采样像素索引
-    num_pixels = H * W
-    num_sampled_pixels = int(num_pixels * keep_ratio)  # 计算采样后要保留的像素数
-    sampled_indices = np.random.choice(num_pixels, size=num_sampled_pixels, replace=False)
+    # 构造相机内参矩阵
+    K = camera_matrix((width, height), fovy)
+    R = la.mat_from_quat(quat)[:3, :3]
+    t = pos.reshape(3, 1)
 
-    # 将一维索引映射回二维像素坐标
-    sampled_y, sampled_x = np.unravel_index(sampled_indices, (H, W))
+    # 计算相机内参矩阵的逆
+    K_inv = np.linalg.inv(K)
 
-    # 获取采样的深度值
-    sampled_depth_buffer = linear_depth_buffer[sampled_y, sampled_x]
+    # 创建像素坐标网格
+    x = np.arange(0, width)
+    y = np.arange(0, height)
+    xv, yv = np.meshgrid(x, y)  # xv 和 yv 的形状是 (height, width)
 
-    # 将深度缓冲值从 [0, 1] 转换为真实的深度值
-    sampled_depth = z_near + sampled_depth_buffer * (z_far - z_near)
+    # 将像素坐标与深度值结合，形成齐次图像坐标
+    image_coords = np.stack((xv, yv, np.ones_like(xv)), axis=-1)  # (height, width, 3)
 
-    # 将采样的像素坐标转换为标准化设备坐标 (NDC)，范围 [-1, 1]
-    fx, fy = intrinsic_matrix[0, 0], intrinsic_matrix[1, 1]
-    cx, cy = intrinsic_matrix[0, 2], intrinsic_matrix[1, 2]
-    
-    # 映射到 NDC 范围 [-1, 1]
-    ndc_x = (sampled_x - cx) / (fx / (W / 2))  # 转换为 [-1, 1]
-    ndc_y = (sampled_y - cy) / (fy / (H / 2))  # 转换为 [-1, 1]
-    ndc_z = sampled_depth  # 深度值不变，保持在 [0, 1]（或实际深度）
+    # 将齐次图像坐标映射到相机坐标系
+    camera_coords = np.dot(image_coords, K_inv.T)  # (height, width, 3)
 
-    # 将采样的像素坐标堆叠成 3D 点云 (N, 3)
-    camera_points = np.stack([ndc_x * sampled_depth, ndc_y * sampled_depth, ndc_z], axis=-1)
+    # 乘以线性深度值
+    camera_coords *= linear_depth_map[:, :, None]  # 广播机制正常工作 (height, width, 1)
+    camera_coords[..., 2] *= -1  # 反转 Z 轴方向
+    camera_coords = camera_coords[..., [1, 0, 2]]
 
-    # 将相机坐标系下的点云转换到世界坐标系
-    # 首先将点扩展为齐次坐标 (N, 4)
-    camera_points_homogeneous = np.concatenate([camera_points, np.ones((num_sampled_pixels, 1))], axis=-1)
-    
-    # 计算视图矩阵的逆矩阵
-    inverse_view_matrix = np.linalg.inv(view_matrix)
+    # 将相机坐标展平，形成点云
+    point_cloud = camera_coords.reshape(-1, 3)  # (N, 3)
 
-    # 将点云从相机坐标系转换到世界坐标系
-    world_points_homogeneous = camera_points_homogeneous @ inverse_view_matrix.T
-    
-    if user_data is not None:
-        euler, order = user_data
-        num = euler.split(",")
-        for i in range(len(num)):
-            num[i] = float(num[i])
-        rot_mat = la.mat_from_euler(num, order=order)
-        world_points_homogeneous = world_points_homogeneous @ rot_mat
+    # 转换为世界坐标
+    point_cloud = (R @ point_cloud.T + t).T
 
-    # 去掉齐次坐标，得到世界坐标 (N, 3)
-    world_points = world_points_homogeneous[..., :3]
-    
-    return world_points
+    # 随机减少总点数
+    num_points = point_cloud.shape[0]  # 总点数
+    mask = np.random.choice([False, True], size=num_points, p=[1 - kppe_rate, kppe_rate])  # 生成布尔掩码
+    filtered_point_cloud = point_cloud[mask]  # 使用掩码保留点
+
+
+    distances = np.linalg.norm(filtered_point_cloud - pos, axis=1)
+    distance_mask = distances < 9.9
+    filtered_point_cloud = filtered_point_cloud[distance_mask]
 
 
 
-def compute_intrinsic_matrix(cam_intrinsic):
 
-    fx, fy, cx, cy = cam_intrinsic
-    intrinsic_matrix = np.array([
-        [fx, 0,  cx],
-        [0,  fy, cy],
-        [0,  0,  1]
-    ])
-    return intrinsic_matrix
 
-def compute_view_matrix(cam_pos, cam_quat):
 
-    R = la.mat_from_quat(cam_quat)
-    T = la.mat_from_translation(cam_pos)
-    M = T @ R
-    view = np.linalg.inv(M)
-
-    return view
+    return filtered_point_cloud
