@@ -82,36 +82,52 @@ class TerrainGenerator:
 
     def __init__(
         self,
-        folder_path,
-        model_path,
-        output_path,
+        folder_path: str,
+        model_file: str,
+        output_file: str = "scene_terrain.xml",
     ) -> None:
+        """
+        @param
+        - folder_path: 文件夹路径
+        - model_file: 模型文件名
+        - output_file: 输出模型文件名
+        """
+        # 设置路径
         self.folder_path = folder_path
-        self.model_path = model_path
+        self.model_path = self.folder_path + model_file
+        self.output_path = self.folder_path + output_file
+        # 设置场景
         self.scene = xml_et.parse(self.model_path)
         self.root = self.scene.getroot()
         self.worldbody = self.root.find("worldbody")
         self.asset = self.root.find("asset")
+        # 保存标记
+        self.is_saved = False
 
-    def AddGeometry(self, position=[1.0, 0.0, 0.0], euler=[0.0, 0.0, 0.0], size=[0.1, 0.1], geo_type="box"):
+    def __del__(self):
+        # 没有使用 Save() 进行保存的时候提示
+        if not self.is_saved:
+            raise RuntimeWarning("The terrain map was not saved yet, it may be lost.")
+
+    def AddGeometry(
+        self,
+        position: list[3] = [1.0, 0.0, 0.0],
+        euler: list[3] = [0.0, 0.0, 0.0],
+        size: list = [0.1, 0.1],
+        geo_type: str = "box",
+    ):
         """
         添加物体
 
         @param
-        - geo_type: "box", "plane", "sphere", "capsule", "ellipsoid", "cylinder"
+        - position: 位置
+        - euler: 欧拉角
+        - size: 尺寸
+        - geo_type : "box", "plane", "sphere", "capsule", "ellipsoid", "cylinder"
         """
         geo = xml_et.SubElement(self.worldbody, "geom")
         geo.attrib["pos"] = list_to_str(position)
         geo.attrib["type"] = geo_type
-        geo.attrib["size"] = list_to_str(0.5 * np.array(size))  # half size of box for mujoco
-        quat = euler_to_quat(euler[0], euler[1], euler[2])
-        geo.attrib["quat"] = list_to_str(quat)
-
-    # Add Box to scene
-    def AddBox(self, position=[1.0, 0.0, 0.0], euler=[0.0, 0.0, 0.0], size=[0.1, 0.1, 0.1]):
-        geo = xml_et.SubElement(self.worldbody, "geom")
-        geo.attrib["pos"] = list_to_str(position)
-        geo.attrib["type"] = "box"
         geo.attrib["size"] = list_to_str(0.5 * np.array(size))  # half size of box for mujoco
         quat = euler_to_quat(euler[0], euler[1], euler[2])
         geo.attrib["quat"] = list_to_str(quat)
@@ -163,19 +179,36 @@ class TerrainGenerator:
 
     def AddPerlinHeighField(
         self,
-        position=[1.0, 0.0, 0.0],  # position
-        euler=[0.0, -0.0, 0.0],  # attitude
-        size=[1.0, 1.0],  # width and length
-        height_scale=0.2,  # max height
-        negative_height=0.2,  # height in the negative direction of z axis
-        image_width=128,  # height field image size
-        image_height=128,
-        smooth=100.0,  # smooth scale
-        perlin_octaves=6,  # perlin noise parameter
-        perlin_persistence=0.5,
-        perlin_lacunarity=2.0,
-        output_hfield_image="height_field.png",
+        position: list = [1.0, 0.0, 0.0],  # position
+        euler: list = [0.0, -0.0, 0.0],  # attitude
+        size: list = [1.0, 1.0],  # width and length
+        height_scale: float = 0.2,  # max height
+        negative_height: float = 0.2,  # height in the negative direction of z axis
+        image_width: int = 128,  # height field image size
+        image_height: int = 128,
+        smooth: float = 100.0,  # smooth scale
+        perlin_octaves: int = 6,  # perlin noise parameter
+        perlin_persistence: float = 0.5,
+        perlin_lacunarity: float = 2.0,
+        output_hfield_image: str = "height_field.png",
     ):
+        """
+        生成柏林噪声深度图
+
+        @param
+        - position: 高度场的位置，列表格式 [x, y, z]
+        - euler: 高度场的姿态，欧拉角表示，列表格式 [roll, pitch, yaw]
+        - size: 高度场的宽度和长度，列表格式 [width, length]
+        - height_scale: 高度场的最大高度
+        - negative_height: 高度场在z轴负方向的高度
+        - image_width: 高度场图像的宽度
+        - image_height: 高度场图像的高度
+        - smooth: 平滑尺度，用于柏林噪声生成
+        - perlin_octaves: 柏林噪声的倍频数
+        - perlin_persistence: 柏林噪声的持久性
+        - perlin_lacunarity: 柏林噪声的空隙性
+        - output_hfield_image: 输出的高度场图像文件名
+        """
 
         # Generating height field based on perlin noise
         terrain_image = np.zeros((image_height, image_width), dtype=np.uint8)
@@ -211,6 +244,20 @@ class TerrainGenerator:
         image_scale=[1.0, 1.0],  # reduce image resolution
         invert_gray=False,
     ):
+        """
+        从图像生成高度场并添加到仿真环境中
+
+        @param
+        - position: 高度场的位置，列表格式 [x, y, z]
+        - euler: 高度场的姿态，欧拉角表示，列表格式 [roll, pitch, yaw]
+        - size: 高度场的宽度和长度，列表格式 [width, length]
+        - height_scale: 高度场的最大高度
+        - negative_height: 高度场在z轴负方向的高度
+        - input_img: 输入的高度场图像文件路径
+        - output_hfield_image: 输出的高度场图像文件名
+        - image_scale: 图像缩放比例，列表格式 [scale_x, scale_y]
+        - invert_gray: 是否反转灰度图像
+        """
 
         input_image = cv2.imread(input_img)  # 替换为你的图像文件路径
 
@@ -234,8 +281,25 @@ class TerrainGenerator:
         quat = euler_to_quat(euler[0], euler[1], euler[2])
         geo.attrib["quat"] = list_to_str(quat)
 
-    def Save(self, output_path):
-        self.scene.write(output_path)
+    def Save(self, output_file: str = None):
+        """
+        编辑完成后保存 xml 文件
+
+        @param
+        - output_file: 自定义输出文件名，路径为 self.folder_path
+
+        @raise
+        - ValueError: 当没有设置输出路径时
+        """
+        if self.output_path is None and output_file is None:
+            raise ValueError("No vaild output path.")
+
+        try:
+            output_file = self.output_path if output_file is None else join(self.folder_path, output_file)
+            self.scene.write(output_file)
+            self.is_saved = True
+        except Exception as e:
+            raise RuntimeError(f'Fail to save the terrain map. Exception is "{e}".')
 
 
 # ========== Addition ========== #
@@ -248,15 +312,16 @@ def get_random_position(size):
 
 
 if __name__ == "__main__":
+
     folder_path = join(dirname(__file__) + "/../../../static/models/turingzero_agv/")
-    model_path = folder_path + "tz_agv.xml"
-    output_path = folder_path + "scene_terrain.xml"
+    model_file = "tz_agv.xml"
+    output_file = "scene_terrain.xml"
 
     POS_ORIGIN = [0.0, 0.0, -0.1]
     NUM_MAXLEN = 5
     NUM_MAXOBJS = NUM_MAXLEN ^ 2
 
-    tg = TerrainGenerator(folder_path=folder_path, model_path=model_path, output_path=output_path)
+    tg = TerrainGenerator(folder_path=folder_path, model_file=model_file)
 
     tg.AddPerlinHeighField(position=POS_ORIGIN, size=[NUM_MAXLEN * 2, NUM_MAXLEN * 2], height_scale=0.5, negative_height=0.5, image_width=256, image_height=256, perlin_octaves=8, smooth=200)
 
@@ -264,13 +329,14 @@ if __name__ == "__main__":
     for i in range(num):
         tg.AddGeometry(position=get_random_position(NUM_MAXLEN), size=[random.random() * 5, random.random() * 5], geo_type="cylinder")
 
-    tg.AddBox([0, 5, 4], size=[12, 0.02, 8])
-    tg.AddBox([0, -5, 4], size=[12, 0.02, 8])
-    tg.AddBox([5, 0, 4], size=[0.02, 12, 8])
-    tg.AddBox([-5, 0, 4], size=[0.02, 12, 8])
-    tg.AddBox([0, 0, 8], size=[12, 12, 0.02])
+    # the room
+    tg.AddGeometry([0, 5, 4], size=[12, 0.02, 8])
+    tg.AddGeometry([0, -5, 4], size=[12, 0.02, 8])
+    tg.AddGeometry([5, 0, 4], size=[0.02, 12, 8])
+    tg.AddGeometry([-5, 0, 4], size=[0.02, 12, 8])
+    tg.AddGeometry([0, 0, 8], size=[12, 12, 0.02])
 
-    tg.Save(output_path)
+    tg.Save()
 
 """
     # 用法参考
