@@ -58,6 +58,7 @@ class ModuleLazyLoader:
 class EtcdClient:
     def __init__(self, tbk_manager):
         import etcd3
+
         self.etcd3 = etcd3
         self.etcd = self._client()
         self.MESSAGE_PREFIX = "/tbk/ps"
@@ -82,7 +83,7 @@ class EtcdClient:
         res = self.etcd.get_prefix(self.MESSAGE_PREFIX)
         for r in res:
             key, value = r[1].key.decode(), r[0]
-            keys = key[len(self.MESSAGE_PREFIX):].split("/")[1:]
+            keys = key[len(self.MESSAGE_PREFIX) :].split("/")[1:]
             info = None
             if len(keys) == 1:
                 info = self.tbk_manager.all_types.State()
@@ -105,12 +106,7 @@ class EtcdClient:
     def get_param_info(self, _prefix=None):
         prefix = self.PARAM_PREFIX + (_prefix if _prefix else "")
         raw_data = self.etcd.get_prefix(prefix)
-        data = dict(
-            [
-                (r[1].key.decode('utf-8', errors='ignore')[12:], r[0].decode('utf-8', errors='ignore'))
-                for r in raw_data
-            ]
-        )
+        data = dict([(r[1].key.decode("utf-8", errors="ignore")[12:], r[0].decode("utf-8", errors="ignore")) for r in raw_data])
         return data
 
     def update_pub_msg_type(self):
@@ -133,7 +129,7 @@ class TBKManager:
         # 动态导入库
         self.all_modules = None
         self.all_types = None
-        self.tbkpy = ModuleLazyLoader('tbkpy._core', self.tbkpy_init)
+        self.tbkpy = ModuleLazyLoader("tbkpy._core", self.tbkpy_init)
 
         self.etcd = EtcdClient(self)
         # self.param_tree = None
@@ -144,14 +140,16 @@ class TBKManager:
         self.subscriber_dict = {}
         self.publisher_dict = {}
 
+        self.all_types_init()
+
     def tbkpy_init(self):
         self.tbkpy.init(self.name)
-        self.all_types_init()
 
     def all_types_init(self):
         # 加载 protobuf type 类型
         from tzcp.tbk import tbk_pb2
         from tzcp.ros import std_pb2
+
         self.all_modules = [tbk_pb2, std_pb2]
         self.all_types = types.ModuleType("all_types")
         sys.modules["all_types"] = self.all_types
@@ -159,7 +157,7 @@ class TBKManager:
         for m in self.all_modules:
             descriptor = m.DESCRIPTOR
             package_name = descriptor.package
-            builder.BuildTopDescriptorsAndMessages(descriptor, package_name,self.all_types.__dict__)
+            builder.BuildTopDescriptorsAndMessages(descriptor, package_name, self.all_types.__dict__)
 
     def unsubscribe(self, name, msg_name, **kwargs):
         tag = kwargs.get("tag", None)
@@ -212,7 +210,7 @@ class TBKManager:
 
 tbk_manager = TBKManager("simulator")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # from Utils.ProtobufManager import ProtobufManager
     #
     # pm = ProtobufManager()
