@@ -15,7 +15,8 @@ class CanvasMuJoCo(Canvas2D):
         self.mj_model = mj_model
         self.mj_data = mj_data
         self.frame = np.zeros((self.size[1], self.size[0], 4))
-        self.frame_depth = np.zeros((self.size[1], self.size[0], 4))
+        # self.frame_depth = np.zeros((self.size[1], self.size[0], 1))
+        self.frame_depth = None
         self.frame_tag = self.texture_register(self.size)
         self.frame_thread()
         self.camid = camid
