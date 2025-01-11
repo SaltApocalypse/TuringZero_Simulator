@@ -15,9 +15,6 @@ class TBKDemo(BaseBox):
     def __init__(self, ui, **kwargs):
         super().__init__(ui, **kwargs)
         self.size = (1200, 900)
-        self.mj_model = mujoco.MjModel.from_xml_path('ui/boxes/SimulatorModule/test.xml')
-        self.mj_data = mujoco.MjData(self.mj_model)
-
 
         self.puber = tbk_manager.publisher(name="test", msg_name="test2", msg_type=tbk_pb2.State)
         self.puber2 = tbk_manager.publisher(name="test", msg_name="test3", msg_type=std_pb2.Int64)
@@ -30,11 +27,9 @@ class TBKDemo(BaseBox):
 
 
     def create(self):
-        self.canvas = CanvasMuJoCo(parent=self.tag, size=self.size, mj_model=self.mj_model, mj_data=self.mj_data)
+        pass
 
     def update(self):
-        self.canvas.update()
-
         msg = tbk_pb2.State()
         msg.uuid = "testuuid"
 
