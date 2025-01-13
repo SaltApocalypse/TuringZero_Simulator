@@ -28,15 +28,11 @@ class SimulatorBox(BaseBox):
 
     def create(self):
         with dpg.group(horizontal=True, parent=self.tag):
-            self.euler_input = dpg.add_input_text(
-                label="Euler", default_value="0,0,0", width=100, callback=self.update_params
-            )
+            self.euler_input = dpg.add_input_text(label="Euler", default_value="0,0,0", width=100, callback=self.update_params)
             self.order = dpg.add_input_text(label="Order", default_value="YXZ", width=100, callback=self.update_params)
         self.front_camera = mujoco.mj_name2id(self.mj_model, mujoco.mjtObj.mjOBJ_CAMERA, "front_camera")
         self.now_camera = self.front_camera
-        self.canvas = CanvasMuJoCo(
-            parent=self.tag, size=self.size, mj_model=self.mj_model, mj_data=self.mj_data, camid=self.now_camera
-        )
+        self.canvas = CanvasMuJoCo(parent=self.tag, size=self.size, mj_model=self.mj_model, mj_data=self.mj_data, camid=self.now_camera)
         self.pub_register()
 
     def update_params(self):
@@ -86,7 +82,7 @@ class SimulatorBox(BaseBox):
             self.mj_model.cam_quat[self.now_camera],
             self.mj_model.cam_pos[self.now_camera],
         )
-        rot = la.mat_from_euler([0,np.pi / 2, 0], order="YXZ")[:3, :3]
+        rot = la.mat_from_euler([0, np.pi / 2, 0], order="YXZ")[:3, :3]
         points = points @ rot
 
         linear_depth_normalized = cv2.normalize(linear_depth_buffer, None, 0, 255, cv2.NORM_MINMAX)

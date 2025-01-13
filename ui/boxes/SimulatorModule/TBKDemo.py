@@ -3,11 +3,10 @@
 from ui.boxes.BaseBox import BaseBox
 from ui.components.CanvasMuJoCo import CanvasMuJoCo
 import mujoco
-
-from ui.components.TBKManager.TBKManager import tbk_manager
-
 from tzcp.tbk import tbk_pb2
 from tzcp.ros import std_pb2
+
+from ui.components.TBKManager.TBKManager import tbk_manager
 
 
 class TBKDemo(BaseBox):
@@ -34,10 +33,10 @@ class TBKDemo(BaseBox):
         pass
 
     def update(self):
-        msg = tbk_manager.all_types.State()
+        msg = tbk_pb2.State()
         msg.uuid = "testuuid"
 
-        msg2 = tbk_manager.all_types.Int64()
+        msg2 = std_pb2.Int64()
         msg2.data = 123
 
         self.puber.publish(msg.SerializeToString())

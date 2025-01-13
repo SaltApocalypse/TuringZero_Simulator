@@ -7,7 +7,6 @@ import types
 
 from google.protobuf.internal import builder
 from google.protobuf.json_format import MessageToJson
-from jedi.inference.compiled.subprocess.functions import load_module
 
 from utils.ClientLogManager import client_logger
 
@@ -58,6 +57,7 @@ class ModuleLazyLoader:
 class EtcdClient:
     def __init__(self, tbk_manager):
         import etcd3
+
         self.etcd3 = etcd3
         self.etcd = self._client()
         self.MESSAGE_PREFIX = "/tbk/ps"
@@ -105,12 +105,7 @@ class EtcdClient:
     def get_param_info(self, _prefix=None):
         prefix = self.PARAM_PREFIX + (_prefix if _prefix else "")
         raw_data = self.etcd.get_prefix(prefix)
-        data = dict(
-            [
-                (r[1].key.decode('utf-8', errors='ignore')[12:], r[0].decode('utf-8', errors='ignore'))
-                for r in raw_data
-            ]
-        )
+        data = dict([(r[1].key.decode("utf-8", errors="ignore")[12:], r[0].decode("utf-8", errors="ignore")) for r in raw_data])
         return data
 
     def update_pub_msg_type(self):
@@ -215,7 +210,7 @@ class TBKManager:
 
 tbk_manager = TBKManager("simulator")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # from Utils.ProtobufManager import ProtobufManager
     #
     # pm = ProtobufManager()
