@@ -14,9 +14,7 @@ class TBKDemo(BaseBox):
         super().__init__(ui, **kwargs)
         self.size = (1200, 900)
 
-        # self.puber = tbk_manager.publisher(name="test", msg_name="test2", msg_type=tbk_manager.all_types.State)
-        # self.puber2 = tbk_manager.publisher(name="test", msg_name="test3", msg_type=tbk_manager.all_types.Int64)
-        self.puber3 = tbk_manager.publisher(name="test", msg_name="test4", msg_type="int")
+        self.puber = tbk_manager.publisher(name="tz_agv", msg_name="tz_agv_status")
 
         # tbk_manager.subscriber(name="test", msg_name="test2", tag="123", callback_func=print)
         # tbk_manager.subscriber(name="test", msg_name="test3", tag="456", callback_func=print)
@@ -35,7 +33,8 @@ class TBKDemo(BaseBox):
 
         # self.puber.publish(msg.SerializeToString())
         # self.puber2.publish(msg2.SerializeToString())
-        self.puber3.publish(123)
+        self.puber3.publish("123")
+
 
     def destroy(self):
         super().destroy()
