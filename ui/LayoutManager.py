@@ -24,30 +24,34 @@ class LayoutManager:
 
     def load_ui(self):
         ui_config = self.config.get("ui", {})
-        viewport_config = ui_config.get("viewport", {
-            "title": "DPG-Client",
-            "width": 1920,
-            "height": 1080,
-        })
-        dpg.create_viewport(
-            **viewport_config
+        viewport_config = ui_config.get(
+            "viewport",
+            {
+                "title": "DPG-Client",
+                "width": 1920,
+                "height": 1080,
+            },
         )
-        app_config = ui_config.get("app", {
-            "docking": True,
-            "docking_space": True,
-        })
-        dpg.configure_app(
-            **app_config
+        dpg.create_viewport(**viewport_config)
+        app_config = ui_config.get(
+            "app",
+            {
+                "docking": True,
+                "docking_space": True,
+            },
         )
+        dpg.configure_app(**app_config)
         dpg.setup_dearpygui()
         dpg.show_viewport()
 
-        self.interface_config = ui_config.get("interface", {
-            "theme": "dark",
-            "language": "zh",
-        })
+        self.interface_config = ui_config.get(
+            "interface",
+            {
+                "theme": "dark",
+                "language": "zh",
+            },
+        )
         self.set_theme(self.interface_config["theme"])
-
 
     @staticmethod
     def load_config(config_file):
@@ -62,7 +66,7 @@ class LayoutManager:
             return {}
 
     def set_theme(self, theme):
-        theme_path = THEME_PATH+theme+".json"
+        theme_path = THEME_PATH + theme + ".json"
         theme_config = json.loads(open(theme_path, "r", encoding="utf-8").read())
         with dpg.theme() as global_theme:
             with dpg.theme_component(dpg.mvAll):
@@ -101,13 +105,16 @@ class LayoutManager:
 
     def load_boxes(self):
         boxes_config = self.config.get("boxes", {})
-        self.box_default_layout = boxes_config.get("default", {
-            "prohibited_boxes": ["ConsoleBox", "InputConsoleBox"],  # 排除项
-            "box_width": 1280,
-            "box_height": 720,
-            "box_default_pos": (300, 50),
-            "box_pos_offset": 20,
-        })
+        self.box_default_layout = boxes_config.get(
+            "default",
+            {
+                "prohibited_boxes": ["ConsoleBox", "InputConsoleBox"],  # 排除项
+                "box_width": 1280,
+                "box_height": 720,
+                "box_default_pos": (300, 50),
+                "box_pos_offset": 20,
+            },
+        )
 
         for k, v in self.box_default_layout.items():
             setattr(DynamicConfig, k.upper(), v)
@@ -117,13 +124,8 @@ class LayoutManager:
             if ins_config["cls_name"] in DynamicConfig.PROHIBITED_BOXES:
                 continue
             try:
-                self.ui.new_box(
-                    ins_config["cls_name"],
-                    width=ins_config["width"],
-                    height=ins_config["height"],
-                    pos=ins_config["pos"],
-                    data=ins_config["data"]
-                )
+                # self.ui.new_box(ins_config["cls_name"], width=ins_config["width"], height=ins_config["height"], pos=ins_config["pos"], data=ins_config["data"])
+                self.ui.new_box(ins_config["cls_name"], width=ins_config["width"], height=ins_config["height"], pos=ins_config["pos"])
             except Exception as e:
                 client_logger.log("ERROR", f"Box {ins_config['cls_name']} failed", e)
 
@@ -138,7 +140,7 @@ class LayoutManager:
                     "interface": self.interface_config,
                 },
                 "boxes": {
-                    "default":self.box_default_layout,
+                    "default": self.box_default_layout,
                     "instances": self.get_boxes_config(),
                 },
             }
@@ -156,8 +158,7 @@ class LayoutManager:
                     "width": dpg.get_item_width(box.tag),
                     "height": dpg.get_item_height(box.tag),
                     "pos": dpg.get_item_pos(box.tag),
-                    "data": box.data,
+                    # "data": box.data,
                 }
             )
         return boxes_config
-

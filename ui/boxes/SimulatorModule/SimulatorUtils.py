@@ -54,13 +54,14 @@ class PositionPID:
         self.output = 0.0
 
 
-def velocity_to_wheel(vx: int, vy: int, w: int):
+def velocity_to_wheel(vx: int, vz: int, w: int):
     """
     将整车运动需求转换为各电机速度要求
+    NOTE: 仅针对AGV小车！
 
     @param
     - vx: x 方向的速度 (m/s)
-    - vy: y 方向的速度 (m/s)
+    - vz: z 方向的速度 (m/s)
     - w: w 角度 (rad/s)
 
     @return
@@ -77,7 +78,7 @@ def velocity_to_wheel(vx: int, vy: int, w: int):
             [-math.sin(THETA2) * math.cos(w) - math.cos(THETA2) * math.sin(w), -math.sin(THETA2) * math.sin(w) + math.cos(THETA2) * math.cos(w), LENGTH],
         ]
     )
-    result = V @ np.array([vx, vy, w]).transpose()
+    result = V @ np.array([vx, vz, w]).transpose()
 
     return result
 
@@ -94,7 +95,7 @@ def get_info_imu(model: mujoco.MjModel, data: mujoco.MjData, name: str, inOneLis
     - model
     - data
     - name: 需要查看的物体
-    - inOneList: 是否把数据在同一个数组里，默认`true`；否则分为三个数组
+    - inOneList: 是否把数据在同一个数组里，默认`true`；否则分为三个变量
 
     @return
     - list[10]:
@@ -113,12 +114,12 @@ def get_info_imu(model: mujoco.MjModel, data: mujoco.MjData, name: str, inOneLis
     gyro = data.sensordata[3:6]
     # vel = data.sensordata[6:]
 
-    # TODO: 考虑自定义提供名称批量获取
+    # NOTE: 考虑默认参数为主体的名称并用变量填充
     id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, name)
 
     if inOneList:
         return [data.xquat[id][0], data.xquat[id][1], data.xquat[id][2], data.xquat[id][3], gyro[0], gyro[1], gyro[2], acc[0], acc[1], acc[2]]
-    return [data.xquat[id], gyro, acc]
+    return data.xquat[id], gyro, acc
 
 
 def get_info_actor(model: mujoco.MjModel, data: mujoco.MjData, name=None):
@@ -212,15 +213,3 @@ def get_info_jointstate(model: mujoco.MjModel, data: mujoco.MjData, name=None):
         )
 
     return res
-
-
-def get_info_img():
-    pass  # TODO:
-
-
-def get_info_rgb_camera():
-    pass  # TODO:
-
-
-def get_info_depth_camera():
-    pass  # TODO:

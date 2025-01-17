@@ -11,31 +11,30 @@ from google.protobuf.json_format import MessageToJson
 from utils.ClientLogManager import client_logger
 
 
-def build_param_tree(flat_dict):
-    tree = {}
-
-    for key, value in flat_dict.items():
-        parts = key.split("/")
-        current_level = tree
-
-        for part in parts[:-1]:  # 遍历层级中的所有部分（除了最后一个）
-            if part not in current_level:
-                current_level[part] = {}
-            current_level = current_level[part]
-
-        # 处理最后一个部分，可能包含冒号
-        last_part = parts[-1]
-        sub_parts = last_part.split(":")
-
-        for sub_part in sub_parts[:-1]:
-            if sub_part not in current_level:
-                current_level[sub_part] = {}
-            current_level = current_level[sub_part]
-
-        # 最后的部分是叶节点
-        current_level[sub_parts[-1]] = value
-
-    return tree
+# def build_param_tree(flat_dict):
+#     tree = {}
+#
+#     for key, value in flat_dict.items():
+#         parts = key.split("/")
+#         current_level = tree
+#
+#         for part in parts[:-1]:  # 遍历层级中的所有部分（除了最后一个）
+#             if part not in current_level:
+#                 current_level[part] = {}
+#             current_level = current_level[part]
+#
+#         # 处理最后一个部分，可能包含冒号
+#         last_part = parts[-1]
+#         sub_parts = last_part.split(":")
+#
+#         for sub_part in sub_parts[:-1]:
+#             if sub_part not in current_level:
+#                 current_level[sub_part] = {}
+#             current_level = current_level[sub_part]
+#
+#         # 最后的部分是叶节点
+#         current_level[sub_parts[-1]] = value
+#     return tree
 
 
 class ModuleLazyLoader:
@@ -127,8 +126,8 @@ class TBKManager:
     def __init__(self, name="TBKNode"):
         self.name = name
         # 动态导入库
-        self.all_modules = None
-        self.all_types = None
+        self.all_modules = []
+        self._all_types = None
         self.tbkpy = ModuleLazyLoader("tbkpy._core", self.tbkpy_init)
 
         self.etcd = EtcdClient(self)
@@ -140,24 +139,30 @@ class TBKManager:
         self.subscriber_dict = {}
         self.publisher_dict = {}
 
-        self.all_types_init()
-
     def tbkpy_init(self):
         self.tbkpy.init(self.name)
 
+    @property
+    def all_types(self):
+        if self._all_types is None:
+            self.all_types_init()
+        return self._all_types
+
     def all_types_init(self):
-        # 加载 protobuf type 类型
         from tzcp.tbk import tbk_pb2
         from tzcp.ros import std_pb2
 
-        self.all_modules = [tbk_pb2, std_pb2]
-        self.all_types = types.ModuleType("all_types")
-        sys.modules["all_types"] = self.all_types
+        # 加载 protobuf type 类型
+        self._all_types = types.ModuleType("all_types")
+        sys.modules["all_types"] = self._all_types
+        self.load_module(tbk_pb2)
+        self.load_module(std_pb2)
 
-        for m in self.all_modules:
-            descriptor = m.DESCRIPTOR
-            package_name = descriptor.package
-            builder.BuildTopDescriptorsAndMessages(descriptor, package_name, self.all_types.__dict__)
+    def load_module(self, module):
+        descriptor = module.DESCRIPTOR
+        package_name = descriptor.package
+        builder.BuildTopDescriptorsAndMessages(descriptor, package_name, self.all_types.__dict__)
+        self.all_modules.append(module)
 
     def unsubscribe(self, name, msg_name, **kwargs):
         tag = kwargs.get("tag", None)
@@ -177,7 +182,10 @@ class TBKManager:
             raw_msg = msg
 
         for tag, callback_func in self.callback_dict[name][msg_name].items():
-            callback_func(raw_msg)
+            try:
+                callback_func(raw_msg)
+            except Exception as e:
+                client_logger.log("ERROR", f"Run callback_func {callback_func.__name__} error!", e)
 
     def subscriber(self, name, msg_name, tag, **kwargs):
         msg_type = self.etcd.get_pub_msg_type(name, msg_name)
@@ -194,7 +202,7 @@ class TBKManager:
             lambda msg: self.callback_manager(name, msg_name, msg, msg_type, **kwargs),
         )
 
-    def publisher(self, name, msg_name, msg_type=None, **kwargs):
+    def publisher(self, name, msg_name, msg_type, **kwargs):
         if inspect.isclass(msg_type):
             try:
                 msg_type = msg_type.__name__
