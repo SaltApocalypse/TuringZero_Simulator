@@ -79,7 +79,7 @@ class SimulatorBox(BaseBox):
     def update(self):
         if self.canvas.frame_depth is None:
             return
-        self.rotate_camera_by_degrees(60)
+        self.rotate_camera_by_degrees(30)
         # self.canvas.get_camera_img(self.now_camera)
         non_linear_depth_buffer = self.canvas.frame_depth[:, :, 0]
         linear_depth_buffer = st.nonlinear_to_linear_depth(non_linear_depth_buffer, 0.1, 10)
