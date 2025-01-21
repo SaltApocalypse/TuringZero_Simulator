@@ -22,7 +22,7 @@ def camera_matrix(size,fovy):
     res = np.array(((-f, 0, width / 2), (0, f, height / 2), (0, 0, 1)))
     return res
 
-def depth_to_point_cloud(linear_depth_map, fovy, quat, pos, kppe_rate=0.001):
+def depth_to_point_cloud(linear_depth_map, fovy, quat, pos, kppe_rate=0.01):
     """
     将深度图转换为3D点云
 

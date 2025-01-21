@@ -14,7 +14,7 @@ import ui.boxes.SimulatorModule.SimTransform as st
 
 
 class SimulatorBox(BaseBox):
-    only = True
+    only = False
 
     def __init__(self, ui, **kwargs):
         super().__init__(ui, **kwargs)
@@ -33,9 +33,11 @@ class SimulatorBox(BaseBox):
             )
             self.order = dpg.add_input_text(label="Order", default_value="YXZ", width=100, callback=self.update_params)
         self.front_camera = mujoco.mj_name2id(self.mj_model, mujoco.mjtObj.mjOBJ_CAMERA, "front_camera")
+
+
         self.now_camera = self.front_camera
         self.canvas = CanvasMuJoCo(
-            parent=self.tag, size=self.size, mj_model=self.mj_model, mj_data=self.mj_data, camid=self.now_camera
+            parent=self.tag, size=self.size, mj_model=self.mj_model, mj_data=self.mj_data, camid=self.front_camera
         )
         self.pub_register()
 
@@ -77,7 +79,8 @@ class SimulatorBox(BaseBox):
     def update(self):
         if self.canvas.frame_depth is None:
             return
-        self.rotate_camera_by_degrees(40)
+        self.rotate_camera_by_degrees(60)
+        # self.canvas.get_camera_img(self.now_camera)
         non_linear_depth_buffer = self.canvas.frame_depth[:, :, 0]
         linear_depth_buffer = st.nonlinear_to_linear_depth(non_linear_depth_buffer, 0.1, 10)
         points = st.depth_to_point_cloud(
@@ -104,3 +107,5 @@ class SimulatorBox(BaseBox):
             serialized_points = pickle.dumps(batch_points)
             self.points_pub.publish(serialized_points)
         self.canvas.update()
+
+
