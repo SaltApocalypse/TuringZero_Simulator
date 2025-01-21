@@ -1,1 +1,3 @@
-from . import SimulatorBox
+from .SimulatorBox import SimulatorBox
+
+__all__ = ['SimulatorBox']

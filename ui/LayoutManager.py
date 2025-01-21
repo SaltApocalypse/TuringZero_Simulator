@@ -1,10 +1,13 @@
+import base64
+import pickle
+
 import dearpygui.dearpygui as dpg
 import json
 
 from config.SystemConfig import LAYOUT_CONFIG_FILE, THEME_PATH
 from config import DynamicConfig
 from utils.ClientLogManager import client_logger
-
+from pathlib import Path
 
 class LayoutManager:
     APP_EXCLUSIONS = ["version", "major_version", "minor_version", "platform", "device_name"]
@@ -102,11 +105,10 @@ class LayoutManager:
     def load_boxes(self):
         boxes_config = self.config.get("boxes", {})
         self.box_default_layout = boxes_config.get("default", {
-            "prohibited_boxes": ["ConsoleBox", "InputConsoleBox"],  # 排除项
-            "box_width": 1280,
-            "box_height": 720,
-            "box_default_pos": (300, 50),
-            "box_pos_offset": 20,
+            "box_width": DynamicConfig.BOX_WIDTH or 1280,
+            "box_height": DynamicConfig.BOX_HEIGHT or 720,
+            "box_default_pos": DynamicConfig.BOX_DEFAULT_POS or (300, 50),
+            "box_pos_offset": DynamicConfig.BOX_POS_OFFSET or 20,
         })
 
         for k, v in self.box_default_layout.items():
@@ -114,20 +116,22 @@ class LayoutManager:
 
         instances = boxes_config.get("instances", {})
         for ins_config in instances:
-            if ins_config["cls_name"] in DynamicConfig.PROHIBITED_BOXES:
-                continue
             try:
                 self.ui.new_box(
                     ins_config["cls_name"],
                     width=ins_config["width"],
                     height=ins_config["height"],
                     pos=ins_config["pos"],
-                    data=ins_config["data"]
+                    data=pickle.loads(base64.b64decode(ins_config["data"].encode())),
                 )
             except Exception as e:
                 client_logger.log("ERROR", f"Box {ins_config['cls_name']} failed", e)
 
     def save(self):
+        layout_dir = Path(LAYOUT_CONFIG_FILE).parent
+        if not layout_dir.exists():
+            layout_dir.mkdir(parents=True)
+
         with open(LAYOUT_CONFIG_FILE, "w+") as f:
             app_config = {k: v for k, v in dpg.get_app_configuration().items() if k not in self.APP_EXCLUSIONS}
             viewport_config = {k: v for k, v in dpg.get_viewport_configuration(0).items() if k not in self.VIEWPORT_EXCLUSIONS}
@@ -148,7 +152,7 @@ class LayoutManager:
     def get_boxes_config(self):
         boxes_config = []
         for box in self.ui.boxes:
-            if box.__class__.__name__ in DynamicConfig.PROHIBITED_BOXES:
+            if not box.save:
                 continue
             boxes_config.append(
                 {
@@ -156,7 +160,7 @@ class LayoutManager:
                     "width": dpg.get_item_width(box.tag),
                     "height": dpg.get_item_height(box.tag),
                     "pos": dpg.get_item_pos(box.tag),
-                    "data": box.data,
+                    "data": base64.b64encode(pickle.dumps(box.data)).decode(),
                 }
             )
         return boxes_config
