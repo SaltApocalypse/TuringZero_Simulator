@@ -342,7 +342,7 @@ if __name__ == "__main__":
 
     # tg.AddPerlinHeighField(position=POS_ORIGIN, size=[NUM_MAXLEN * 2, NUM_MAXLEN * 2], height_scale=0.5, negative_height=0.5, image_width=256, image_height=256, perlin_octaves=8, smooth=200)
 
-    num = random.randint(1, NUM_MAXOBJS)
+    num = random.randint(5, NUM_MAXOBJS)
     for i in range(num):
         tg.AddGeometry(position=get_random_position(NUM_MAXLEN), size=[random.random() * 5, random.random() * 5], geo_type="cylinder")
 
@@ -351,7 +351,7 @@ if __name__ == "__main__":
     tg.AddGeometry([0, -5, 4], size=[12, 0.02, 8])
     tg.AddGeometry([5, 0, 4], size=[0.02, 12, 8])
     tg.AddGeometry([-5, 0, 4], size=[0.02, 12, 8])
-    tg.AddGeometry([0, 0, 8], size=[12, 12, 0.02])
+    # tg.AddGeometry([0, 0, 8], size=[12, 12, 0.02])
 
     tg.Save()
 
