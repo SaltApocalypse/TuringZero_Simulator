@@ -1,20 +1,21 @@
 import dearpygui.dearpygui as dpg
-from config import DynamicConfig
 from ui.boxes import BaseBox
 
 class InputConsoleBox(BaseBox):
     only = True
+    save = False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.width = 1000
         self.height = 300
         self.is_sticky = False
-        self.all_class_name = [i.__name__ for i in self.ui.all_classes if i.__name__ not in DynamicConfig.PROHIBITED_BOXES]
+        self.all_classes = self.ui.all_classes.values()
+        self.old_classes = list(self.all_classes)
         self.input_text = None
         self.select_index = 0
-        self.filter_set = None
-        self.filter_list = self.all_class_name
+        # 筛选后的列表
+        self.filter_list = None
         self.selectables = {}
 
     def create(self):
@@ -37,30 +38,45 @@ class InputConsoleBox(BaseBox):
         self.input_text = dpg.add_input_text(
             width=self.width, height=self.height, callback=self.filter_res, parent=self.tag
         )
-        for cls_name in self.all_class_name:
-            self.selectables[cls_name] = dpg.add_selectable(
-                label=cls_name,
-                filter_key=cls_name,
-                callback=self.instantiate_box,
+        self.generate_selectables()
+
+    def generate_selectables(self):
+        for cls in self.all_classes:
+            if not cls.save:
+                continue
+            self.selectables[cls.__name__] = dpg.add_selectable(
+                label=cls.__name__,
+                filter_key=cls.__name__,
+                callback=lambda s,a,u:self.ui.new_box(u),
                 parent=self.tag,
+                user_data=cls.__name__,
             )
+
+    def clear_all_selectables(self):
+        list(map(dpg.delete_item, self.selectables.values()))
+        self.selectables.clear()
+        self.generate_selectables()
+        self.select_index = 0
+        self.filter_res(None, "")
 
     def filter_res(self, sender, app_data):
         self.select_index = 0
         [dpg.hide_item(i) for i in self.selectables.values()]
         self.filter_list = []
-        for cls_name in self.all_class_name:
+        for cls in self.all_classes:
+            if not cls.save:
+                continue
             pos = 0
             match = True
             for char in app_data.lower():
-                pos = cls_name.lower().find(char, pos)
+                pos = cls.__name__.lower().find(char, pos)
                 if pos == -1:
                     match = False
                     break
                 pos += 1
             if match:
-                dpg.show_item(self.selectables[cls_name])
-                self.filter_list.append(cls_name)
+                dpg.show_item(self.selectables[cls.__name__])
+                self.filter_list.append(cls.__name__)
         self.update_selected()
 
     def key_release_handler(self, sender, app_data, user_data):
@@ -77,7 +93,7 @@ class InputConsoleBox(BaseBox):
             self.hide()
         if self.filter_list:
             if dpg.is_item_visible(self.tag) and key == dpg.mvKey_Return:
-                self.instantiate_box(self.selectables[self.filter_list[self.select_index]])
+                self.ui.new_box(self.filter_list[self.select_index])
         self.update_selected()
         dpg.focus_item(self.input_text)
 
@@ -93,7 +109,6 @@ class InputConsoleBox(BaseBox):
                 if self.select_index == len(self.filter_list):
                     self.select_index = 0
             self.update_selected()
-        # dpg.focus_item(self.input_text)
 
     def update_selected(self):
         if not self.filter_list:
@@ -104,11 +119,10 @@ class InputConsoleBox(BaseBox):
         dpg.set_value(self.selectables[cls_name], True)
         dpg.configure_item(self.input_text, hint=cls_name)
 
-    def instantiate_box(self, sender):
-        instance_func_name = f"add_{dpg.get_item_filter_key(sender)}"
-        instance_func = getattr(self.ui, instance_func_name, None)
-        # instance_func 中有将新创建的实例添加进 self.boxes
-        instance_func(ui=self.ui)
+    def update(self):
+        if self.old_classes != list(self.all_classes):
+            self.clear_all_selectables()
+            self.old_classes = list(self.all_classes)
 
     def destroy(self):
         super().destroy()

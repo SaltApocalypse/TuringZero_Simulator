@@ -194,6 +194,7 @@ class Canvas2D:
         with dpg.texture_registry():
             texture_id = dpg.add_raw_texture(width=width, height=height,default_value=data,format=self.format)
         return texture_id
+
     def texture_update(self,texture_id, image):
         image = image.ravel().astype(np.float32) / 255.0
         dpg.set_value(texture_id, image)

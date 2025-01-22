@@ -6,6 +6,7 @@ from utils.ClientLogManager import client_logger
 
 class BaseBox(object):
     only = False
+    save = True
 
     def __init__(self, ui, **kwargs):
         self.ui = ui
