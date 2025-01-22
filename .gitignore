@@ -4,6 +4,7 @@
 __pycache__
 **/__pycache__
 logs/*
+static/layout/*.json
 *.lprof
 
 # Simulator
