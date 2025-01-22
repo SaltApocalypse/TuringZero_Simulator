@@ -39,10 +39,6 @@ class SimulatorBox(BaseBox):
         # dpg
         self.size = (600, 400)
 
-        # # dpg params
-        # self.tf_euler = "0,0,0"
-        # self.tf_order = "YXZ"
-
         # tbk
         tbk_manager.load_module(actor_info_pb2)
         tbk_manager.load_module(imu_info_pb2)
@@ -66,10 +62,6 @@ class SimulatorBox(BaseBox):
         # tbk
         self.pub_register()
 
-        # other setting
-        # self.tf_euler = "0,0,0"
-        # self.tf_order = "YXZ"
-
     def create(self):
         # create camera id
         self.free_camera_id = -1
@@ -91,26 +83,11 @@ class SimulatorBox(BaseBox):
     def destroy(self):
         super().destroy()
 
-    # def rot_cam(self, rot_speed):
-    #     euler = la.quat_to_euler(self.mj_model.cam_quat[self.now_camera])
-    #     euler = ((euler[0] + rot_speed) % (2 * np.pi), *euler[1:])
-    #     self.mj_model.cam_quat[self.now_camera] = la.quat_from_euler(euler, order="YXZ")
-
-    # def rotate_camera_by_degrees(self, degrees):
-
-    #     # Convert degrees to radians since the math operations are in radians
-    #     radians = np.deg2rad(degrees)
-
-    #     Get the current orientation of the camera in Euler angles
-    #     euler = la.quat_to_euler(self.mj_model.cam_quat[self.lidar_camera_id])
-
-    #     # Apply the rotation to the yaw (first element, euler[0]) and normalize it into [0, 2π]
-    #     euler = ((euler[0] + radians) % (2 * np.pi), *euler[1:])
-
-    #     # Update the camera's quaternion with the new euler angles
-    #     self.mj_model.cam_quat[self.now_camera] = la.quat_from_euler(euler, order="YXZ")
-
+    # ========== 通信 ==========
     def pub_register(self):
+        """
+        publisher 注册
+        """
         import tbkpy._core as tbkpy
 
         ep_info = tbkpy.EPInfo()
@@ -148,6 +125,7 @@ class SimulatorBox(BaseBox):
             # status_jointstate.effort = state[3]
             self.__puber_status_jointstate.publish(status_jointstate.SerializeToString())
 
+    # ========== 控制 ==========
     def get_command_then_positionPID(self, msg):
         """
         接受位置PID控制指令并执行
@@ -175,6 +153,26 @@ class SimulatorBox(BaseBox):
         # self.mj_data.ctrl[0] = self.__wheels_pid[0].update(current_velocity[0], target_velocity[0])
         # self.mj_data.ctrl[1] = self.__wheels_pid[1].update(current_velocity[1], target_velocity[1])
         # self.mj_data.ctrl[2] = self.__wheels_pid[2].update(current_velocity[2], target_velocity[2])
+
+    # ========== lidar ==========
+    # def rot_cam(self, rot_speed):
+    #     euler = la.quat_to_euler(self.mj_model.cam_quat[self.now_camera])
+    #     euler = ((euler[0] + rot_speed) % (2 * np.pi), *euler[1:])
+    #     self.mj_model.cam_quat[self.now_camera] = la.quat_from_euler(euler, order="YXZ")
+
+    def rotate_camera_by_degrees(self, degrees):
+
+        # Convert degrees to radians since the math operations are in radians
+        radians = np.deg2rad(degrees)
+
+        # Get the current orientation of the camera in Euler angles
+        euler = la.quat_to_euler(self.mj_model.cam_quat[self.lidar_camera_id])
+
+        # Apply the rotation to the yaw (first element, euler[0]) and normalize it into [0, 2π]
+        euler = ((euler[0] + radians) % (2 * np.pi), *euler[1:])
+
+        # Update the camera's quaternion with the new euler angles
+        self.mj_model.cam_quat[self.now_camera] = la.quat_from_euler(euler, order="YXZ")
 
     def update(self):
         # mujoco 步进

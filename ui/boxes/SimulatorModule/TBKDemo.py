@@ -28,9 +28,9 @@ class TBKDemo(BaseBox):
         # tbk_manager.load_module(jointstate_info_pb2)
 
         # agv status subscriber
-        self.__suber_status_imu = tbk_manager.subscriber(name="tz_agv", msg_name="tz_agv_status_imu", tag="IMUInfo", callback_func=print)
-        self.__suber_status_actor = tbk_manager.subscriber(name="tz_agv", msg_name="tz_agv_status_actor", tag="ActorInfo", callback_func=print)
-        self.__suber_status_jointstate = tbk_manager.subscriber(name="tz_agv", msg_name="tz_agv_status_jointstate", tag="JointStateInfo", callback_func=print)
+        # self.__suber_status_imu = tbk_manager.subscriber(name="tz_agv", msg_name="tz_agv_status_imu", tag="IMUInfo", callback_func=print)
+        # self.__suber_status_actor = tbk_manager.subscriber(name="tz_agv", msg_name="tz_agv_status_actor", tag="ActorInfo", callback_func=print)
+        # self.__suber_status_jointstate = tbk_manager.subscriber(name="tz_agv", msg_name="tz_agv_status_jointstate", tag="JointStateInfo", callback_func=print)
 
         # agv run command
         self.__puber_command = tbk_manager.publisher(name="tz_agv", msg_name="tz_agz_command", msg_type="list")
