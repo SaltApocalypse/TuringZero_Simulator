@@ -303,9 +303,25 @@ class TerrainGenerator:
 
 
 # ========== Addition ========== #
-def get_random_position(size):
+def get_random_position(size: float):
+    """
+    生成一个随机二维平面坐标（z轴为0）
+
+    @param
+    - size: 生成坐标的范围限制 (-size, size)
+
+    @return
+    - list: 生成的坐标 [x, y, z]
+    """
 
     def ran(size: float, positive: bool):
+        """
+        生成一个随机数字，如果 positive 为 True 则为正数、
+
+        @param
+        - size: 同上
+        - positive: False 为可能生成负数，True 为仅生成正数
+        """
         return random.random() * size * ((-1 if random.random() <= 0.5 else 1) if not positive else 1)
 
     return [ran(size, 0), ran(size, 0), 0]
@@ -314,7 +330,8 @@ def get_random_position(size):
 if __name__ == "__main__":
 
     folder_path = join(dirname(__file__) + "/../../../static/models/turingzero_agv/")
-    model_file = "tz_agv.xml"
+    model_file = "tz_agv.xml"  # 纯车，需要加地形
+    model_file = "tz_agv_with_plane.xml"  # 有地形
     output_file = "scene_terrain.xml"
 
     POS_ORIGIN = [0.0, 0.0, -0.1]
@@ -323,9 +340,9 @@ if __name__ == "__main__":
 
     tg = TerrainGenerator(folder_path=folder_path, model_file=model_file)
 
-    tg.AddPerlinHeighField(position=POS_ORIGIN, size=[NUM_MAXLEN * 2, NUM_MAXLEN * 2], height_scale=0.5, negative_height=0.5, image_width=256, image_height=256, perlin_octaves=8, smooth=200)
+    # tg.AddPerlinHeighField(position=POS_ORIGIN, size=[NUM_MAXLEN * 2, NUM_MAXLEN * 2], height_scale=0.5, negative_height=0.5, image_width=256, image_height=256, perlin_octaves=8, smooth=200)
 
-    num = random.randint(1, NUM_MAXOBJS)
+    num = random.randint(5, NUM_MAXOBJS)
     for i in range(num):
         tg.AddGeometry(position=get_random_position(NUM_MAXLEN), size=[random.random() * 5, random.random() * 5], geo_type="cylinder")
 
@@ -334,7 +351,7 @@ if __name__ == "__main__":
     tg.AddGeometry([0, -5, 4], size=[12, 0.02, 8])
     tg.AddGeometry([5, 0, 4], size=[0.02, 12, 8])
     tg.AddGeometry([-5, 0, 4], size=[0.02, 12, 8])
-    tg.AddGeometry([0, 0, 8], size=[12, 12, 0.02])
+    # tg.AddGeometry([0, 0, 8], size=[12, 12, 0.02])
 
     tg.Save()
 

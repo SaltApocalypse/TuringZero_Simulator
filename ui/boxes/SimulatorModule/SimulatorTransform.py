@@ -16,13 +16,15 @@ def nonlinear_to_linear_depth(non_linear_depth, z_near, z_far):
     linear_depth = (2.0 * z_near * z_far) / (z_far + z_near - non_linear_depth * (z_far - z_near))
     return linear_depth
 
-def camera_matrix(size,fovy):
+
+def camera_matrix(size, fovy):
     width, height = size
     f = 0.5 * height / np.tan(fovy * np.pi / 360)
     res = np.array(((-f, 0, width / 2), (0, f, height / 2), (0, 0, 1)))
     return res
 
-def depth_to_point_cloud(linear_depth_map, fovy, quat, pos, kppe_rate=0.001):
+
+def depth_to_point_cloud(linear_depth_map, fovy, quat, pos, kppe_rate=0.01):
     """
     将深度图转换为3D点云
 
@@ -71,14 +73,8 @@ def depth_to_point_cloud(linear_depth_map, fovy, quat, pos, kppe_rate=0.001):
     mask = np.random.choice([False, True], size=num_points, p=[1 - kppe_rate, kppe_rate])  # 生成布尔掩码
     filtered_point_cloud = point_cloud[mask]  # 使用掩码保留点
 
-
     distances = np.linalg.norm(filtered_point_cloud - pos, axis=1)
     distance_mask = distances < 9.9
     filtered_point_cloud = filtered_point_cloud[distance_mask]
-
-
-
-
-
 
     return filtered_point_cloud

@@ -7,15 +7,21 @@
 
         <texture name="grid" type="2d" builtin="checker" rgb1=".2 .3 .4" rgb2=".1 0.15 0.2" width="512" height="512" mark="cross" markrgb=".8 .8 .8" />
         <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" />
-    <hfield name="perlin_hfield" size="5.0 5.0 0.5 0.5" file="../height_field.png" /></asset>
+    </asset>
 
     <worldbody>
+        <geom name="floor" size="50 50 0.01" type="plane" material="grid" contype="0" conaffinity="1" />
+        <light pos="0.9 0.9 2.5" dir="-0.320815 -0.320815 -0.891154" directional="true" cutoff="4" exponent="20" diffuse="1 1 1" specular="0 0 0" />
+    <geom pos="2.2253318054270994 4.3059994861687665 0" type="cylinder" size="2.214235742920003 1.028518327570285" quat="1.0 0.0 0.0 0.0" /><geom pos="4.4931159138339565 3.9577137529555757 0" type="cylinder" size="0.5955425022295955 0.7119825961315398" quat="1.0 0.0 0.0 0.0" /><geom pos="3.395283530041781 1.7582155203748806 0" type="cylinder" size="0.3090709376502229 0.8772873947975407" quat="1.0 0.0 0.0 0.0" /><geom pos="-3.8293945838464802 2.102769339373412 0" type="cylinder" size="0.19060863631189723 0.19028199100455806" quat="1.0 0.0 0.0 0.0" /><geom pos="1.0812789491471326 -0.9480408214132713 0" type="cylinder" size="0.9496784364615224 1.6028250415042051" quat="1.0 0.0 0.0 0.0" /><geom pos="0 5 4" type="box" size="6.0 0.01 4.0" quat="1.0 0.0 0.0 0.0" /><geom pos="0 -5 4" type="box" size="6.0 0.01 4.0" quat="1.0 0.0 0.0 0.0" /><geom pos="5 0 4" type="box" size="0.01 6.0 4.0" quat="1.0 0.0 0.0 0.0" /><geom pos="-5 0 4" type="box" size="0.01 6.0 4.0" quat="1.0 0.0 0.0 0.0" /></worldbody>
+
+    <worldbody>
+        <camera name="fix_camera" pos="0 0 2" quat="0 0 0.707 0.707" fovy="45" />
         <light name="point_light" pos="0 0 1" dir="0 0 -1" diffuse="1 1 1" specular="0.1 0.1 0.1" />
         <body name="tz_agv" pos="0 0 0.0915">
             <joint name="body_free_joint" type="free" limited="false" actuatorfrclimited="false" />
 
             <geom name="head_marker" type="box" size="0.02 0.02 0.02" rgba="0 1 0 1" contype="1" conaffinity="0" group="1" pos="0.0 -0.2385 0.028" />
-            <camera name="front_camera" pos="0 0 0.09" quat="0 0 0.707 0.707" fovy="45" />
+            <camera name="lidar_camera" pos="0 0 0.09" quat="0 0 0.707 0.707" fovy="45" />
 
             <site name="IMU" pos="0 0 0" quat="0 0 0 1" />
             <body name="base" pos="0 0 0" quat="0 0 0 1">
@@ -188,7 +194,7 @@
 
             </body>
         </body>
-    <geom type="hfield" hfield="perlin_hfield" pos="0.0 0.0 -0.1" quat="1.0 0.0 0.0 0.0" /><geom pos="3.5823507434986297 1.5874918934260447 0" type="cylinder" size="1.1243880419695946 0.8788772901308859" quat="1.0 0.0 0.0 0.0" /><geom pos="-0.5380750586833893 3.6379952892165517 0" type="cylinder" size="2.4039238778544747 0.3484726987700351" quat="1.0 0.0 0.0 0.0" /><geom pos="-0.4511611565541901 3.397233597930724 0" type="cylinder" size="0.8474145079014672 1.4374246055441828" quat="1.0 0.0 0.0 0.0" /><geom pos="-4.43013388231481 -3.667393032061263 0" type="cylinder" size="1.242752216404641 0.8987684975088078" quat="1.0 0.0 0.0 0.0" /><geom pos="-0.0054078732586487765 3.071152519862128 0" type="cylinder" size="1.322222798039876 2.277156408482294" quat="1.0 0.0 0.0 0.0" /><geom pos="0 5 4" type="box" size="6.0 0.01 4.0" quat="1.0 0.0 0.0 0.0" /><geom pos="0 -5 4" type="box" size="6.0 0.01 4.0" quat="1.0 0.0 0.0 0.0" /><geom pos="5 0 4" type="box" size="0.01 6.0 4.0" quat="1.0 0.0 0.0 0.0" /><geom pos="-5 0 4" type="box" size="0.01 6.0 4.0" quat="1.0 0.0 0.0 0.0" /><geom pos="0 0 8" type="box" size="6.0 6.0 0.01" quat="1.0 0.0 0.0 0.0" /></worldbody>
+    </worldbody>
 
     <sensor>
         <accelerometer name="acc" site="IMU" />

@@ -1,21 +1,19 @@
 import dearpygui.dearpygui as dpg
 
 from ui.boxes import BaseBox
-from config import DynamicConfig
-
 
 class ConsoleBox(BaseBox):
     only = True
+    save = False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.fps_text = None
         self.button_tags = []
-        self.all_classes = self.ui.all_classes
+        self.all_classes = self.ui.all_classes.values()
+        self.old_classes = list(self.all_classes)
         self.is_sticky = True
         self.sticky_button = None
-        # self.generate_add_methods()
-
 
     def create(self):
         # 初始化设置
@@ -58,24 +56,23 @@ class ConsoleBox(BaseBox):
     # 自动添加按钮
     def generate_add_bottom(self):
         for cls in self.all_classes:
-            if cls.__name__ in DynamicConfig.PROHIBITED_BOXES:
+            # TODO: 这里只是暂时这么用，这个逻辑是有问题的
+            if not cls.save:
                 continue
-            instance_func_name = f"add_{cls.__name__}"
             self.button_tags.append(
                 dpg.add_button(
                     width=150,
                     label=cls.__name__,
                     parent=self.tag,
-                    callback=self.instantiate_box,
-                    user_data=instance_func_name,
+                    callback=lambda s,a,u:self.ui.new_box(u),
+                    user_data=cls.__name__,
                 )
             )
 
-    def instantiate_box(self, sender, app_data, user_data):
-        instance_func_name = user_data
-        instance_func = getattr(self.ui, instance_func_name, None)
-        # instance_func 中有将新创建的实例添加进 self.boxes
-        instance_func(ui=self.ui)
+    def clear_all_bottom(self):
+        list(map(dpg.delete_item, self.button_tags))
+        self.button_tags.clear()
+        self.generate_add_bottom()
 
     def sticky(self):
         self.is_sticky = not self.is_sticky
@@ -86,3 +83,6 @@ class ConsoleBox(BaseBox):
 
     def update(self):
         dpg.set_value(self.fps_text, f"FPS:{dpg.get_frame_rate()}")
+        if self.old_classes != list(self.all_classes):
+            self.clear_all_bottom()
+            self.old_classes = list(self.all_classes)

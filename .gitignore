@@ -4,9 +4,9 @@
 __pycache__
 **/__pycache__
 logs/*
-static/layout/*
+static/layout/*.json
 *.lprof
 
 # Simulator
-**/*.stl
+# **/*.stl
 **/MUJOCO_LOG.TXT

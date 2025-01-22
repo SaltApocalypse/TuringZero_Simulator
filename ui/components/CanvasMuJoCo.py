@@ -1,6 +1,6 @@
 import dearpygui.dearpygui as dpg
 from ui.components.Canvas2D import Canvas2D
-
+import time
 import threading
 import glfw
 import mujoco
@@ -22,10 +22,14 @@ class CanvasMuJoCo(Canvas2D):
         self.camid = camid
         self.last_mouse_pos = (0, 0)
         self.now_mouse_pos = (0, 0)
-
+        self.viewer = None
+        self.cam_data = {}
         with self.draw():
-            dpg.draw_image(self.frame_tag, (0, 0), self.size)
-        self.handler_register()
+            dpg.draw_image(self.frame_tag, (-1, -1), self.size)
+
+        if self.camid == -1:
+            self.handler_register()
+        time.sleep(0.2)
 
     def frame_thread(self):
         t = threading.Thread(target=self.update_frame, daemon=True)
@@ -39,6 +43,11 @@ class CanvasMuJoCo(Canvas2D):
                 self.frame, self.frame_depth = self.viewer.read_pixels(camid=self.camid, depth=True)
         except Exception as e:
             print(e)
+
+    # def get_camera_img(self, camid):
+    #     glfw.make_context_current(self.viewer.window)
+    #     frame, frame_depth = self.viewer.read_pixels(camid=camid, depth=True)
+    #     return frame, frame_depth
 
     def handler_register(self):
         with dpg.handler_registry():
@@ -65,5 +74,4 @@ class CanvasMuJoCo(Canvas2D):
         mujoco.mjv_moveCamera(self.mj_model, action, dx / self.size[1], dy / self.size[1], self.viewer.scn, self.viewer.cam)
 
     def update(self):
-        mujoco.mj_step(self.mj_model, self.mj_data)
         self.texture_update(self.frame_tag, self.frame)

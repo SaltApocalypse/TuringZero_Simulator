@@ -11,9 +11,21 @@ message JointStateInfo {
         float z = 3;
     }
 
+    message Angular {
+        float wx = 1;
+        float wy = 2;
+        float wz = 3;
+    }
+    
+    message Linear {
+        float vx = 1;
+        float vy = 2;
+        float vz = 3;
+    }
+
     message Velocity {
-        float angular = 1;
-        float linear = 2;
+        Angular angular = 1;
+        Linear linear = 2;
     }
 
     Position position = 2;
