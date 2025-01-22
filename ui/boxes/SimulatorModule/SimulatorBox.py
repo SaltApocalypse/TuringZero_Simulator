@@ -155,10 +155,10 @@ class SimulatorBox(BaseBox):
         # self.mj_data.ctrl[2] = self.__wheels_pid[2].update(current_velocity[2], target_velocity[2])
 
     # ========== lidar ==========
-    # def rot_cam(self, rot_speed):
-    #     euler = la.quat_to_euler(self.mj_model.cam_quat[self.now_camera])
-    #     euler = ((euler[0] + rot_speed) % (2 * np.pi), *euler[1:])
-    #     self.mj_model.cam_quat[self.now_camera] = la.quat_from_euler(euler, order="YXZ")
+    def rot_cam(self, rot_speed):
+        euler = la.quat_to_euler(self.mj_model.cam_quat[self.now_camera])
+        euler = ((euler[0] + rot_speed) % (2 * np.pi), *euler[1:])
+        self.mj_model.cam_quat[self.now_camera] = la.quat_from_euler(euler, order="YXZ")
 
     def rotate_camera_by_degrees(self, degrees):
 
@@ -172,7 +172,7 @@ class SimulatorBox(BaseBox):
         euler = ((euler[0] + radians) % (2 * np.pi), *euler[1:])
 
         # Update the camera's quaternion with the new euler angles
-        self.mj_model.cam_quat[self.now_camera] = la.quat_from_euler(euler, order="YXZ")
+        self.mj_model.cam_quat[self.lidar_camera_id] = la.quat_from_euler(euler, order="YXZ")
 
     def update(self):
         # mujoco 步进
@@ -181,7 +181,7 @@ class SimulatorBox(BaseBox):
         # 雷达：通过深度图获取雷达信息
         if self.lidar_camera_canvas.frame_depth is None:
             return
-        # self.rotate_camera_by_degrees(30)
+        self.rotate_camera_by_degrees(30)
 
         non_linear_depth_buffer = self.lidar_camera_canvas.frame_depth[:, :, 0]
         linear_depth_buffer = st.nonlinear_to_linear_depth(non_linear_depth_buffer, 0.1, 10)
