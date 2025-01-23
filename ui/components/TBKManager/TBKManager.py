@@ -80,7 +80,6 @@ class TBKManager:
         self.all_modules.append(module)
 
     def unsubscribe(self, name, msg_name, tag, **kwargs):
-        print(self.subscriber_dict)
         del self.callback_dict[name][msg_name][tag]
         if len(self.callback_dict[name][msg_name]) < 1:
             del self.subscriber_dict[name][msg_name]

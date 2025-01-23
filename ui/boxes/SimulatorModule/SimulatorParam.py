@@ -1,62 +1,58 @@
 import mujoco
 
 from ...components.TBKManager.ParamData import ParamData
-import ui.boxes.SimulatorModule.SimulatorUtils as utils
-
-dict = {}
-# def param_dict_init():
-dict["head_marker"] = ["rgba", "pos"]
-dict["tz_agv"] = ["pos", "quat"]
-dict["front_wheel_rolling_joint"] = ["qvel"]
-dict["left_wheel_rolling_joint"] = ["qvel"]
-dict["right_wheel_rolling_joint"] = ["qvel"]
+from .SimulatorUtils import *
 
 
-def param_init(mjModel, mjData):
-    for key in dict.keys:
-        name = key
-        for value in dict[key]:
-            print(value)
-            # ParamData(f"tz_agv/{key}", f"{value}")
+class SimulatorParam:
+    def __init__(self, mjModel, mjData):
+        self.mjModel = mjModel
+        self.mjData = mjData
 
+        self.dict = {}
+        self.param_dict_init(self.mjModel, self.mjData)
 
-#     head_marker_name = "head_marker"
-#     head_marker_rgba = ParamData(f"tz_agv/{head_marker_name}", "rgba")
-#     head_marker_rgba.value = utils.get_model_attribute(mjModel, head_marker_name, mujoco.mjtObj.mjOBJ_GEOM, "rgba")
+    def param_dict_init(self, mjModel, mjData):
+        self.dict["head_marker"] = [mjModel, mujoco.mjtObj.mjOBJ_GEOM, "geom_rgba"]
+        self.dict["head_marker"] = [mjData, mujoco.mjtObj.mjOBJ_GEOM, "qpos"]
+        self.dict["tz_agv"] = [mjModel, mujoco.mjtObj.mjOBJ_BODY, "quat"]
+        self.dict["tz_agv"] = [mjData, mujoco.mjtObj.mjOBJ_BODY, "qpos"]
+        self.dict["front_wheel_rolling_joint"] = [mjData, mujoco.mjtObj.mjOBJ_JOINT, "qvel"]
+        self.dict["left_wheel_rolling_joint"] = [mjData, mujoco.mjtObj.mjOBJ_JOINT, "qvel"]
+        self.dict["right_wheel_rolling_joint"] = [mjData, mujoco.mjtObj.mjOBJ_JOINT, "qvel"]
 
-#     tz_agv_name = "tz_agv"
-#     tz_agv_pos = ParamData(f"{tz_agv_name}", "pos")
-#     tz_agv_pos.value = utils.get_model_attribute(mjModel, tz_agv_name, mujoco.mjtObj.mjOBJ_BODY, "pos")
-#     tz_agv_quat = ParamData(f"{tz_agv_name}", "quat")
-#     tz_agv_quat.value = utils.get_model_attribute(mjModel, tz_agv_name, mujoco.mjtObj.mjOBJ_BODY, "quat")
+    def param_init(self, mjModel, mjData):
+        for model_name in self.dict.keys():
+            value = self.dict[model_name]
+            source = value[0]
+            type = value[1]
+            for i in range(2, len(value)):
+                param_name = f"{model_name}_{value[i]}"
+                prefix = f"tz_agv/{model_name}"
+                name = value[i]  # 变量
+                deafult_value = get_model_attribute(
+                    model=mjModel,
+                    source=source,
+                    model_name=model_name,
+                    type=type,
+                    attribute=name,
+                )
+                setattr(self, param_name, ParamData(prefix=prefix, name=name, default_value=str(deafult_value)))
 
-#     front_wheel_rolling_joint_name = "front_wheel_rolling_joint"
-#     front_wheel_rolling_joint_qvel = ParamData(f"{front_wheel_rolling_joint_name}", "qvel")
-#     front_wheel_rolling_joint_qvel.value = utils.get_model_attribute(mjData, front_wheel_rolling_joint_name, mujoco.mjtObj.mjOBJ_JOINT, "qvel")
-
-#     left_wheel_rolling_joint_name = "left_wheel_rolling_joint"
-#     left_wheel_rolling_joint_qvel = ParamData(f"{left_wheel_rolling_joint_name}", "qvel")
-#     left_wheel_rolling_joint_qvel.value = utils.get_model_attribute(mjData, left_wheel_rolling_joint_name, mujoco.mjtObj.mjOBJ_JOINT, "qvel")
-
-#     right_wheel_rolling_joint_name = "right_wheel_rolling_joint"
-#     right_wheel_rolling_joint_qvel = ParamData(f"{right_wheel_rolling_joint_name}", "qvel")
-#     right_wheel_rolling_joint_qvel.value = utils.get_model_attribute(mjData, right_wheel_rolling_joint_name, mujoco.mjtObj.mjOBJ_JOINT, "qvel")
-
-
-# def param_update(mjModel, mjData):
-#     head_marker_name = "head_marker"
-#     utils.set_model_attribute(mjModel, head_marker_name, mujoco.mjtObj.mjOBJ_GEOM, "rgba", head_marker_rgba.value)
-
-#     tz_agv_name = "tz_agv"
-#     utils.set_model_attribute(mjModel, tz_agv_name, mujoco.mjtObj.mjOBJ_BODY, "pos", tz_agv_pos.value)
-
-#     front_wheel_rolling_joint_name = "front_wheel_rolling_joint"
-#     utils.set_model_attribute(mjModel, tz_agv_name, mujoco.mjtObj.mjOBJ_BODY, "quat", tz_agv_quat.value)
-#     utils.set_model_attribute(mjData, front_wheel_rolling_joint_name, mujoco.mjtObj.mjOBJ_JOINT, "qvel", front_wheel_rolling_joint_qvel.value)
-#     left_wheel_rolling_joint_qvel = ParamData(f"{left_wheel_rolling_joint_name}", "qvel")
-
-#     left_wheel_rolling_joint_name = "left_wheel_rolling_joint"
-#     utils.set_model_attribute(mjData, left_wheel_rolling_joint_name, mujoco.mjtObj.mjOBJ_JOINT, "qvel", left_wheel_rolling_joint_qvel.value)
-
-#     right_wheel_rolling_joint_name = "right_wheel_rolling_joint"
-#     utils.set_model_attribute(mjData, right_wheel_rolling_joint_name, mujoco.mjtObj.mjOBJ_JOINT, "qvel", right_wheel_rolling_joint_qvel.value)
+    def param_update(self, mjModel, mjData):
+        for model_name in self.dict.keys():
+            value = self.dict[model_name]
+            source = value[0]
+            type = value[1]
+            for i in range(2, len(value)):
+                param_name = f"{model_name}_{value[i]}"
+                prefix = f"tz_agv/{model_name}"
+                name = value[i]
+                set_model_attribute(
+                    model=mjModel,
+                    source=source,
+                    model_name=model_name,
+                    type=type,
+                    attribute=name,
+                    value=getattr(self, param_name).value,
+                )

@@ -3,7 +3,6 @@
 from ui.boxes.BaseBox import BaseBox
 from ui.components.CanvasMuJoCo import CanvasMuJoCo
 from ui.components.TBKManager.TBKManager import tbk_manager
-
 import pickle
 
 # proto include
@@ -41,10 +40,10 @@ class TBKDemo(BaseBox):
     def update(self):
         self.timer += 1
 
-        if 0 == self.timer % 500:
-            p = self.timer / 500
-            self.puber_command.publish(pickle.dumps(self.test_points[p % 3]))
-            print(f"Send position {self.test_point[p%3]}")
+        # if 0 == self.timer % 500:
+        # p = self.timer / 500
+        # self.puber_command.publish(pickle.dumps(self.test_points[p % 3]))
+        # print(f"Send position {self.test_point[p%3]}")
 
     def destroy(self):
         super().destroy()

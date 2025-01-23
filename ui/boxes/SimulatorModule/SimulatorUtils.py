@@ -176,10 +176,10 @@ def get_info_jointstate(model: mujoco.MjModel, data: mujoco.MjData, name=None):
     - 关节速度
     - 关节效果
 
-    @param
+    @paramParamData
     - model
     - data
-    - name: 需要查找的 joint 名字或名字列表
+    - name: 需要查找的 joint 名字或名字列表ParamData
 
     @return
     - list[3]:
@@ -217,6 +217,7 @@ def get_info_jointstate(model: mujoco.MjModel, data: mujoco.MjData, name=None):
 
 # ========== 获取信息  ========== #
 def set_model_attribute(
+    model: mujoco.MjModel,
     source,
     model_name: str,
     type: type = mujoco.mjtObj.mjOBJ_BODY,
@@ -231,21 +232,23 @@ def set_model_attribute(
 
 
     @param
+    - model: mjModel 模型
     - source: 数据来源，物体信息等静态的从 mjModel 里面获取，速度信息等动态的从 mjData 里面获取
     - model_name: 模型名称，XML 标签里面的 name
     - type: 模型类型
     - attribute: 属性名，mjModel 结构体里面的
     - value: 属性值
     """
-    model = mujoco.mj_name2id(source, type, model_name)
+    model_id = mujoco.mj_name2id(model, type, model_name)
     try:
-        getattr(source, attribute)[model] = value
+        getattr(source, attribute)[model_id] = value
     except ValueError as e:
         print(e)
 
 
 def get_model_attribute(
-    source: mujoco.MjModel,
+    model: mujoco.MjModel,
+    source,
     model_name: str,
     type: type = mujoco.mjtObj.mjOBJ_BODY,
     attribute: str = None,
@@ -257,6 +260,7 @@ def get_model_attribute(
     > https://mujoco.readthedocs.io/en/latest/APIreference/APItypes.html#mjmodel
 
     @param
+    - model: mjModel 模型
     - source: 数据来源，物体信息等静态的从 mjModel 里面获取，速度信息等动态的从 mjData 里面获取
     - model_name: 模型名称，XML 标签里面的 name
     - type: 模型类型
@@ -265,5 +269,5 @@ def get_model_attribute(
     @return
     - any: 属性值
     """
-    model = mujoco.mj_name2id(source, type, model_name)
-    return getattr(source, attribute)[model]
+    model_id = mujoco.mj_name2id(model, type, model_name)
+    return getattr(source, attribute)[model_id]

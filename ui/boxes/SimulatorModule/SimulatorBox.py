@@ -3,16 +3,40 @@
 import dearpygui.dearpygui as dpg
 from ui.boxes.BaseBox import BaseBox
 from ui.components.CanvasMuJoCo import CanvasMuJoCo
-from ui.boxes.SimulatorModule.SimulatorUtils import get_info_actor
-from ui.boxes.SimulatorModule.SimulatorUtils import get_info_jointstate
-from ui.boxes.SimulatorModule.SimulatorUtils import get_info_imu
-from ui.boxes.SimulatorModule.SimulatorUtils import PositionPID
-from ui.boxes.SimulatorModule.SimulatorUtils import velocity_to_wheel
+
+# import ui.boxes.SimulatorModule.SimulatorUtils as utils
+from .SimulatorUtils import *
+from .SimulatorParam import *
 import ui.boxes.SimulatorModule.SimulatorTransform as st
 from ui.components.TBKManager.TBKManager import tbk_manager
 from utils.ClientLogManager import client_logger
 
-import concurrent.futures
+import mujoco
+import cv2
+import numpy as np
+import pylinalg as la
+import pickle
+import tbkpy._core as tbkpy
+
+# proto include
+from .proto.python import actor_info_pb2
+from .proto.python import imu_info_pb2
+from .proto.python import jointstate_info_pb2
+from .proto.python import image_pb2
+
+# pip install mujoco-python-viewer
+
+import dearpygui.dearpygui as dpg
+from ui.boxes.BaseBox import BaseBox
+from ui.components.CanvasMuJoCo import CanvasMuJoCo
+
+# import ui.boxes.SimulatorModule.SimulatorUtils as utils
+from .SimulatorUtils import *
+from .SimulatorParam import *
+import ui.boxes.SimulatorModule.SimulatorTransform as st
+from ui.components.TBKManager.TBKManager import tbk_manager
+from utils.ClientLogManager import client_logger
+
 import mujoco
 import cv2
 import numpy as np
@@ -49,8 +73,8 @@ class SimulatorBox(BaseBox):
         self.puber_status_actor = tbk_manager.publisher(name="tz_agv", msg_name="tz_agv_status_actor", msg_type=actor_info_pb2.ActorInfo)
         self.puber_status_jointstate = tbk_manager.publisher(name="tz_agv", msg_name="tz_agv_status_jointstate", msg_type=jointstate_info_pb2.JointStateInfo)
         self.puber_free_camera_image = tbk_manager.publisher(name="tz_agv", msg_name="tz_agv_free_camera_image", msg_type=image_pb2.Image)
+        self.puber_front_camera_image = tbk_manager.publisher(name="tz_agv", msg_name="tz_agv_front_camera_image", msg_type=image_pb2.Image)
         # self.puber_fix_camera_image = tbk_manager.publisher(name="tz_agv", msg_name="tz_agv_fix_camera_image", msg_type=image_pb2.Image)
-        # self.puber_front_camera_image = tbk_manager.publisher(name="tz_agv", msg_name="tz_agv_front_camera_image", msg_type=image_pb2.Image)
 
         self.ep_info_pointcloud = tbkpy.EPInfo()
         self.ep_info_pointcloud.name = "default"
@@ -69,6 +93,7 @@ class SimulatorBox(BaseBox):
     def create(self):
         # create camera id
         self.free_camera_id = -1
+        self.front_camera_id = mujoco.mj_name2id(self.mj_model, mujoco.mjtObj.mjOBJ_CAMERA, "front_camera")
         self.fix_camera_id = mujoco.mj_name2id(self.mj_model, mujoco.mjtObj.mjOBJ_CAMERA, "fix_camera")
         self.lidar_camera_id = mujoco.mj_name2id(self.mj_model, mujoco.mjtObj.mjOBJ_CAMERA, "lidar_camera")
 
@@ -76,6 +101,7 @@ class SimulatorBox(BaseBox):
         self.free_camera_canvas = CanvasMuJoCo(parent=self.tag, size=self.size, mj_model=self.mj_model, mj_data=self.mj_data, camid=self.free_camera_id)
 
         # 摄像机主视角
+        self.front_camera_canvas = CanvasMuJoCo(parent=self.tag, size=self.size, mj_model=self.mj_model, mj_data=self.mj_data, camid=self.front_camera_id)
 
         # 固定视角
         self.fix_camera_canvas = CanvasMuJoCo(parent=self.tag, size=(self.size[0] // 2, self.size[1] // 2), mj_model=self.mj_model, mj_data=self.mj_data, camid=self.fix_camera_id)
@@ -89,10 +115,10 @@ class SimulatorBox(BaseBox):
         self.cvs = Canvas2D(parent=self.tag, size=(600, 400), format=dpg.mvFormat_Float_rgb)
         self.texture_id = self.cvs.texture_register((400, 600))
 
-        # ========== test ==========
-        import ui.boxes.SimulatorModule.SimulatorParam as param
-
-        param.param_init(self.mj_model, self.mj_data)
+        # ========== SimulatorParam ==========
+        self.param = SimulatorParam(self.mj_model, self.mj_data)
+        self.param.param_init(self.mj_model, self.mj_data)
+        # 更新在 update()
 
     def destroy(self):
         super().destroy()
@@ -153,7 +179,6 @@ class SimulatorBox(BaseBox):
             mujoco.mj_name2id(self.mj_model, mujoco.mjtObj.mjOBJ_JOINT, "left_wheel_rolling_joint"),
             mujoco.mj_name2id(self.mj_model, mujoco.mjtObj.mjOBJ_JOINT, "right_wheel_rolling_joint"),
         ]
-        print(wheels)
 
         vx, vz, w = pickle.loads(msg)
 
@@ -227,6 +252,14 @@ class SimulatorBox(BaseBox):
         free_camera_img = self.free_camera_canvas.update()
         free_camera_image = image_pb2.Image()
         _, compressed_img = cv2.imencode(".jpg", free_camera_img, [cv2.IMWRITE_JPEG_QUALITY, 80])
+        free_camera_image.img = compressed_img.tobytes()
+        self.puber_free_camera_image.publish(free_camera_image.SerializeToString())
+
+        front_camera_img = self.front_camera_canvas.update()
+        front_camera_image = image_pb2.Image()
+        _, compressed_img = cv2.imencode(".jpg", front_camera_img, [cv2.IMWRITE_JPEG_QUALITY, 80])
+        front_camera_image.img = compressed_img.tobytes()
+        self.puber_front_camera_image.publish(front_camera_image.SerializeToString())
 
         # img_array = np.frombuffer(compressed_img, dtype=np.uint8)
         # img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
@@ -237,11 +270,7 @@ class SimulatorBox(BaseBox):
 
         # self.cvs.texture_update(self.texture_id, img)
 
-        free_camera_image.img = compressed_img.tobytes()
-        self.puber_free_camera_image.publish(free_camera_image.SerializeToString())
-
         # image = cv2.imdecode(compressed_img, cv2.IMREAD_COLOR)
-
         fix_camera_img = self.fix_camera_canvas.update()
         fix_camera_img = [type(fix_camera_img), len(fix_camera_img), fix_camera_img]
 
@@ -250,3 +279,6 @@ class SimulatorBox(BaseBox):
 
         # 返回数据
         self.get_status_and_publish()
+
+        # 更新 param
+        self.param.param_update(self.mj_model, self.mj_data)
