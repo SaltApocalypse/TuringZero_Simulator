@@ -1,4 +1,3 @@
-import importlib
 import inspect
 import os
 import sys
@@ -6,9 +5,10 @@ import time
 import types
 
 from google.protobuf.internal import builder
-from google.protobuf.json_format import MessageToJson
 
 from utils.ClientLogManager import client_logger
+from utils.ModuleLazyLoader import ModuleLazyLoader
+from .EtcdClient import etcd_client
 
 
 # def build_param_tree(flat_dict):
@@ -37,91 +37,6 @@ from utils.ClientLogManager import client_logger
 #     return tree
 
 
-class ModuleLazyLoader:
-    def __init__(self, module_path, callback=None):
-        self._module_path = module_path
-        self._module = None
-        self.callback = callback
-
-    def __getattr__(self, name):
-        if self._module is None:
-            try:
-                self._module = importlib.import_module(self._module_path)
-                if self.callback is not None:
-                    self.callback()
-            except ImportError:
-                raise ImportError(f"Could not import module {self._module_path}")
-        return getattr(self._module, name)
-
-
-class EtcdClient:
-    def __init__(self, tbk_manager):
-        import etcd3
-
-        self.etcd3 = etcd3
-        self.etcd = self._client()
-        self.MESSAGE_PREFIX = "/tbk/ps"
-        self.PARAM_PREFIX = "/tbk/params"
-        self.pubs = {}
-        self.tbk_manager = tbk_manager
-
-    def _client(self):
-        pki_path = os.path.join(os.path.expanduser("~"), ".tbk/etcdadm/pki")
-        return self.etcd3.client(
-            host="127.0.0.1",
-            port=2379,
-            ca_cert=os.path.join(pki_path, "ca.crt"),
-            cert_key=os.path.join(pki_path, "etcdctl-etcd-client.key"),
-            cert_cert=os.path.join(pki_path, "etcdctl-etcd-client.crt"),
-        )
-
-    def get_message_info(self):
-        processes = {}
-        publishers = {}
-        subscribers = {}
-        res = self.etcd.get_prefix(self.MESSAGE_PREFIX)
-        for r in res:
-            key, value = r[1].key.decode(), r[0]
-            keys = key[len(self.MESSAGE_PREFIX) :].split("/")[1:]
-            info = None
-            if len(keys) == 1:
-                info = self.tbk_manager.all_types.State()
-                info.ParseFromString(value)
-                processes[info.uuid] = info
-            elif len(keys) == 3:
-                if keys[1] == "pubs":
-                    info = self.tbk_manager.all_types.Publisher()
-                    info.ParseFromString(value)
-                    publishers[info.uuid] = info
-                elif keys[1] == "subs":
-                    info = self.tbk_manager.all_types.Subscriber()
-                    info.ParseFromString(value)
-                    subscribers[info.uuid] = info
-            else:
-                client_logger.log("ERROR", f"TBKApi: Error: key error:{key}")
-        res = {"ps": processes, "pubs": publishers, "subs": subscribers}
-        return res
-
-    def get_param_info(self, _prefix=None):
-        prefix = self.PARAM_PREFIX + (_prefix if _prefix else "")
-        raw_data = self.etcd.get_prefix(prefix)
-        data = dict([(r[1].key.decode("utf-8", errors="ignore")[12:], r[0].decode("utf-8", errors="ignore")) for r in raw_data])
-        return data
-
-    def update_pub_msg_type(self):
-        msg_info = self.get_message_info()
-        for k, v in msg_info["pubs"].items():
-            info = (v.ep_info.name, v.ep_info.msg_name)
-            msg_type = v.ep_info.msg_type
-            self.pubs[info] = msg_type
-
-    def get_pub_msg_type(self, name, msg_name):
-        info = (name, msg_name)
-        if info not in self.pubs:
-            self.update_pub_msg_type()
-        return self.pubs.get(info, "Unknown")
-
-
 class TBKManager:
     def __init__(self, name="TBKNode"):
         self.name = name
@@ -130,7 +45,7 @@ class TBKManager:
         self._all_types = None
         self.tbkpy = ModuleLazyLoader("tbkpy._core", self.tbkpy_init)
 
-        self.etcd = EtcdClient(self)
+        self.etcd = etcd_client
         # self.param_tree = None
         # self._param_data = None
         # self._message_data = None
@@ -164,12 +79,10 @@ class TBKManager:
         builder.BuildTopDescriptorsAndMessages(descriptor, package_name, self.all_types.__dict__)
         self.all_modules.append(module)
 
-    def unsubscribe(self, name, msg_name, **kwargs):
-        tag = kwargs.get("tag", None)
-        info = (name, msg_name)
-        del self.callback_dict[info][tag]
-        if len(self.callback_dict[info]) < 1:
-            del self.subscriber_dict[info]
+    def unsubscribe(self, name, msg_name, tag, **kwargs):
+        del self.callback_dict[name][msg_name][tag]
+        if len(self.callback_dict[name][msg_name]) < 1:
+            del self.subscriber_dict[name][msg_name]
 
     def is_subscribed(self, name, msg_name, **kwargs) -> bool:
         return self.subscriber_dict.get(name, {}).get(msg_name, None) is not None
@@ -180,6 +93,7 @@ class TBKManager:
             raw_msg.ParseFromString(msg)
         except:
             raw_msg = msg
+            client_logger.log("WARNING", f"name: {name}, msg_name: {msg_name}, Automatic parsing failed!")
 
         for tag, callback_func in self.callback_dict[name][msg_name].items():
             try:
@@ -189,13 +103,13 @@ class TBKManager:
 
     def subscriber(self, name, msg_name, tag, **kwargs):
         msg_type = self.etcd.get_pub_msg_type(name, msg_name)
-        callback_func = kwargs.get("callback_func", None)
-        self.callback_dict.setdefault(name, {}).setdefault(msg_name, {})[tag] = callback_func
+        callback = kwargs.get("callback", None)
+        self.callback_dict.setdefault(name, {}).setdefault(msg_name, {})[tag] = callback
 
         if self.subscriber_dict.get(name, {}).get(msg_name) is not None:
             # 如果已经订阅则退出
             return
-        client_logger.log("INFO", f"Add new subscriber({(name, msg_name)})")
+        client_logger.log("INFO", f"Add new subscriber({name, msg_name}).")
         self.subscriber_dict.setdefault(name, {})[msg_name] = self.tbkpy.Subscriber(
             name,
             msg_name,
@@ -214,6 +128,20 @@ class TBKManager:
         ep_info.msg_type = msg_type
         self.publisher_dict.setdefault(name, {})[msg_name] = self.tbkpy.Publisher(ep_info)
         return self.publisher_dict[name][msg_name]
+
+    def list(self, **kwargs):
+        return self.etcd.list(**kwargs)
+
+    def get(self, **kwargs):
+        r = self.etcd.get(**kwargs)[0]
+        r = r.decode() if isinstance(r, bytes) else r.__str__()
+        return r
+
+    def put(self, **kwargs):
+        return self.etcd.put(**kwargs)
+
+    def delete(self, **kwargs):
+        return self.etcd.delete(**kwargs)[1]
 
 
 tbk_manager = TBKManager("simulator")
@@ -280,6 +208,6 @@ if __name__ == "__main__":
         msg = tbkpb.State()
         msg.uuid = "testuuid"
 
-        puber.publish(msg.SerializeToString())
+        puber.publisher()
         # tbk_manager.pub(name="test", msg_name="test2", msg="test123123")
         time.sleep(0.01)
