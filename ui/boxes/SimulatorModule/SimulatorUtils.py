@@ -216,7 +216,13 @@ def get_info_jointstate(model: mujoco.MjModel, data: mujoco.MjData, name=None):
 
 
 # ========== 获取信息  ========== #
-def set_model_attribute(mj_Model: mujoco.MjModel, model_name: str, attribute: str, value: any) -> None:
+def set_model_attribute(
+    source,
+    model_name: str,
+    type: type = mujoco.mjtObj.mjOBJ_BODY,
+    attribute: str = None,
+    value: any = None,
+) -> None:
     """
     设置模型属性
 
@@ -225,19 +231,25 @@ def set_model_attribute(mj_Model: mujoco.MjModel, model_name: str, attribute: st
 
 
     @param
-    - mj_Model: mujoco 模型
+    - source: 数据来源，物体信息等静态的从 mjModel 里面获取，速度信息等动态的从 mjData 里面获取
     - model_name: 模型名称，XML 标签里面的 name
+    - type: 模型类型
     - attribute: 属性名，mjModel 结构体里面的
     - value: 属性值
     """
-    model = mujoco.mj_name2id(mj_Model, mujoco.mjtObj.mjOBJ_BODY, model_name)
+    model = mujoco.mj_name2id(source, type, model_name)
     try:
-        getattr(mj_Model, attribute)[model] = value
+        getattr(source, attribute)[model] = value
     except ValueError as e:
         print(e)
 
 
-def get_model_attribute(mj_Model: mujoco.MjModel, model_name: str, attribute: str):
+def get_model_attribute(
+    source: mujoco.MjModel,
+    model_name: str,
+    type: type = mujoco.mjtObj.mjOBJ_BODY,
+    attribute: str = None,
+):
     """
     获取模型属性
 
@@ -245,12 +257,13 @@ def get_model_attribute(mj_Model: mujoco.MjModel, model_name: str, attribute: st
     > https://mujoco.readthedocs.io/en/latest/APIreference/APItypes.html#mjmodel
 
     @param
-    - mj_Model: mujoco 模型
+    - source: 数据来源，物体信息等静态的从 mjModel 里面获取，速度信息等动态的从 mjData 里面获取
     - model_name: 模型名称，XML 标签里面的 name
+    - type: 模型类型
     - attribute: 属性名
 
     @return
     - any: 属性值
     """
-    model = mujoco.mj_name2id(mj_Model, mujoco.mjtObj.mjOBJ_BODY, model_name)
-    return getattr(mj_Model, attribute)[model]
+    model = mujoco.mj_name2id(source, type, model_name)
+    return getattr(source, attribute)[model]

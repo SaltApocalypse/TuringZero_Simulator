@@ -89,6 +89,11 @@ class SimulatorBox(BaseBox):
         self.cvs = Canvas2D(parent=self.tag, size=(600, 400), format=dpg.mvFormat_Float_rgb)
         self.texture_id = self.cvs.texture_register((400, 600))
 
+        # ========== test ==========
+        import ui.boxes.SimulatorModule.SimulatorParam as param
+
+        param.param_init(self.mj_model, self.mj_data)
+
     def destroy(self):
         super().destroy()
 
@@ -148,7 +153,7 @@ class SimulatorBox(BaseBox):
             mujoco.mj_name2id(self.mj_model, mujoco.mjtObj.mjOBJ_JOINT, "left_wheel_rolling_joint"),
             mujoco.mj_name2id(self.mj_model, mujoco.mjtObj.mjOBJ_JOINT, "right_wheel_rolling_joint"),
         ]
-        # print(wheels)
+        print(wheels)
 
         vx, vz, w = pickle.loads(msg)
 
