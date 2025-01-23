@@ -37,6 +37,7 @@ class CanvasCallBack:
         self.mouse_pos = dpg.get_drawing_mouse_pos()
         self.last_mouse_pos = self.mouse_pos
         self.mouse_move_pos = (0, 0)
+
     def window_resize_callback(self, sender, app_data, user_data):
         width, height, drawlist_tag, drawlist_parent_tag, size_offset = user_data
         parent_width, parent_height = dpg.get_item_rect_size(drawlist_parent_tag)
@@ -53,13 +54,9 @@ class CanvasCallBack:
             return
         self.last_mouse_pos = self.mouse_pos
         self.mouse_pos = dpg.get_drawing_mouse_pos()
-        self.mouse_move_pos = tuple(
-            x - y for x, y in zip(self.mouse_pos, self.last_mouse_pos)
-        )
+        self.mouse_move_pos = tuple(x - y for x, y in zip(self.mouse_pos, self.last_mouse_pos))
 
-        self._tranform.translation = tuple(
-            x + y for x, y in zip(self._tranform.translation, tuple(self.mouse_move_pos) + (0,))
-        )
+        self._tranform.translation = tuple(x + y for x, y in zip(self._tranform.translation, tuple(self.mouse_move_pos) + (0,)))
 
         self._tranform.translation_matrix = dpg.create_translation_matrix(self._tranform.translation)
         self._tranform.transform_matrix = self._tranform.translation_matrix * self._tranform.scale_matrix
@@ -90,23 +87,15 @@ class CanvasCallBack:
         self._tranform.transform_matrix = self._tranform.translation_matrix * self._tranform.scale_matrix
         if auto_apply:
             dpg.apply_transform(canvas_tag, self._tranform.transform_matrix)
+
     def up_date_mouse_pos(self, sender, app_data, user_data):
         self.mouse_pos = dpg.get_drawing_mouse_pos()
         self.last_mouse_pos = self.mouse_pos
         self.mouse_move_pos = (0, 0)
 
+
 class Canvas2D:
-    def __init__(
-            self,
-            parent,
-            size=(-1, -1),
-            size_offset=(0, -50),
-            pos=[],
-            auto_mouse_transfrom=True,
-            drop_callback=None,
-            scale_step=0.1,
-            format = dpg.mvFormat_Float_rgba
-    ):
+    def __init__(self, parent, size=(-1, -1), size_offset=(0, -50), pos=[], auto_mouse_transfrom=True, drop_callback=None, scale_step=0.1, format=dpg.mvFormat_Float_rgba):
         super().__init__()
         self.size = size
         self.apply_mouse_transfrom = auto_mouse_transfrom
@@ -188,15 +177,14 @@ class Canvas2D:
         with dpg.draw_node(parent=parent) as draw_tag:
             yield draw_tag
 
-    def texture_register(self,size):
+    def texture_register(self, size):
         width, height = size
         data = np.zeros((height, width, 4)).ravel().astype(np.float32) / 255.0
         with dpg.texture_registry():
-            texture_id = dpg.add_raw_texture(width=width, height=height,default_value=data,format=self.format)
+            texture_id = dpg.add_raw_texture(width=width, height=height, default_value=data, format=self.format)
         return texture_id
 
-    def texture_update(self,texture_id, image):
+    def texture_update(self, texture_id, image):
         image = image.ravel().astype(np.float32) / 255.0
         dpg.set_value(texture_id, image)
-
-        
+        return image

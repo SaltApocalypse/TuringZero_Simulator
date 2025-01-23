@@ -75,3 +75,4 @@ class CanvasMuJoCo(Canvas2D):
 
     def update(self):
         self.texture_update(self.frame_tag, self.frame)
+        return self.frame
