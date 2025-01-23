@@ -139,7 +139,7 @@ class SimulatorBox(BaseBox):
             mujoco.mj_name2id(self.mj_model, mujoco.mjtObj.mjOBJ_JOINT, "left_wheel_rolling_joint"),
             mujoco.mj_name2id(self.mj_model, mujoco.mjtObj.mjOBJ_JOINT, "right_wheel_rolling_joint"),
         ]
-        print(wheels)
+        # print(wheels)
 
         vx, vz, w = pickle.loads(msg)
 
