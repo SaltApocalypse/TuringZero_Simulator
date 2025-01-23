@@ -20,7 +20,7 @@
         <body name="tz_agv" pos="0 0 0.0915">
             <joint name="body_free_joint" type="free" limited="false" actuatorfrclimited="false" />
 
-            <geom name="head_marker" type="box" size="0.02 0.02 0.02" rgba="0 1 0 1" contype="1" conaffinity="0" group="1" pos="0.0 -0.2385 0.028" />
+            <geom name="head_marker" type="box" size="0.02 0.02 0.02" rgba="0 1 0 1" contype="1" conaffinity="0" group="1" pos="0.0 0.2385 0.028" />
             <camera name="lidar_camera" pos="0 0 0.09" quat="0 0 0.707 0.707" fovy="45" />
 
             <site name="IMU" pos="0 0 0" quat="0 0 0 1" />
@@ -28,7 +28,7 @@
                 <inertial pos="0 0 0" mass="5" diaginertia="1 1 1" />
                 <geom type="mesh" rgba="0.762 0.762 0.762 1" mesh="base" contype="1" conaffinity="0" group="1" />
 
-                <body name="front_wheel_intermediate_link" pos="0.0 -0.2385 -0.04175" quat="1 0 0 0">
+                <body name="front_wheel_intermediate_link" pos="0.0 0.2385 -0.04175" quat="1 0 0 0">
                     <joint name="front_wheel_rolling_joint" pos="0 0 0" axis="0 1 0" />
                     <inertial pos="0 0 0" quat="0.707107 0 0 0.707107" mass="6.5" diaginertia="0.0524193 0.0303095 0.0303095" />
                     <geom type="mesh" mesh="wheel" contype="0" conaffinity="0" group="1" rgba="0.2 0.2 0.2 1" />

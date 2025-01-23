@@ -213,3 +213,44 @@ def get_info_jointstate(model: mujoco.MjModel, data: mujoco.MjData, name=None):
         )
 
     return res
+
+
+# ========== 获取信息  ========== #
+def set_model_attribute(mj_Model: mujoco.MjModel, model_name: str, attribute: str, value: any) -> None:
+    """
+    设置模型属性
+
+    属性名速查：
+    > https://mujoco.readthedocs.io/en/latest/APIreference/APItypes.html#mjmodel
+
+
+    @param
+    - mj_Model: mujoco 模型
+    - model_name: 模型名称，XML 标签里面的 name
+    - attribute: 属性名，mjModel 结构体里面的
+    - value: 属性值
+    """
+    model = mujoco.mj_name2id(mj_Model, mujoco.mjtObj.mjOBJ_BODY, model_name)
+    try:
+        getattr(mj_Model, attribute)[model] = value
+    except ValueError as e:
+        print(e)
+
+
+def get_model_attribute(mj_Model: mujoco.MjModel, model_name: str, attribute: str):
+    """
+    获取模型属性
+
+    属性名速查：
+    > https://mujoco.readthedocs.io/en/latest/APIreference/APItypes.html#mjmodel
+
+    @param
+    - mj_Model: mujoco 模型
+    - model_name: 模型名称，XML 标签里面的 name
+    - attribute: 属性名
+
+    @return
+    - any: 属性值
+    """
+    model = mujoco.mj_name2id(mj_Model, mujoco.mjtObj.mjOBJ_BODY, model_name)
+    return getattr(mj_Model, attribute)[model]
