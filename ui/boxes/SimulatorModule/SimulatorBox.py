@@ -24,6 +24,7 @@ import tbkpy._core as tbkpy
 from .proto.python import actor_info_pb2
 from .proto.python import imu_info_pb2
 from .proto.python import jointstate_info_pb2
+from .proto.python import image_pb2
 
 
 class SimulatorBox(BaseBox):
@@ -44,20 +45,23 @@ class SimulatorBox(BaseBox):
         tbk_manager.load_module(imu_info_pb2)
         tbk_manager.load_module(jointstate_info_pb2)
 
-        self.__puber_status_imu = tbk_manager.publisher(name="tz_agv", msg_name="tz_agv_status_imu", msg_type=imu_info_pb2.IMUInfo)
-        self.__puber_status_actor = tbk_manager.publisher(name="tz_agv", msg_name="tz_agv_status_actor", msg_type=actor_info_pb2.ActorInfo)
-        self.__puber_status_jointstate = tbk_manager.publisher(name="tz_agv", msg_name="tz_agv_status_jointstate", msg_type=jointstate_info_pb2.JointStateInfo)
+        self.puber_status_imu = tbk_manager.publisher(name="tz_agv", msg_name="tz_agv_status_imu", msg_type=imu_info_pb2.IMUInfo)
+        self.puber_status_actor = tbk_manager.publisher(name="tz_agv", msg_name="tz_agv_status_actor", msg_type=actor_info_pb2.ActorInfo)
+        self.puber_status_jointstate = tbk_manager.publisher(name="tz_agv", msg_name="tz_agv_status_jointstate", msg_type=jointstate_info_pb2.JointStateInfo)
+        self.puber_free_camera_image = tbk_manager.publisher(name="tz_agv", msg_name="tz_agv_free_camera_image", msg_type=image_pb2.Image)
+        # self.puber_fix_camera_image = tbk_manager.publisher(name="tz_agv", msg_name="tz_agv_fix_camera_image", msg_type=image_pb2.Image)
+        # self.puber_front_camera_image = tbk_manager.publisher(name="tz_agv", msg_name="tz_agv_front_camera_image", msg_type=image_pb2.Image)
 
-        self.__ep_info_pointcloud = tbkpy.EPInfo()
-        self.__ep_info_pointcloud.name = "default"
-        self.__ep_info_pointcloud.msg_name = "/cloud_registered"
-        self.__puber_pointcloud = tbkpy.Publisher(self.__ep_info_pointcloud)
+        self.ep_info_pointcloud = tbkpy.EPInfo()
+        self.ep_info_pointcloud.name = "default"
+        self.ep_info_pointcloud.msg_name = "/cloud_registered"
+        self.puber_pointcloud = tbkpy.Publisher(self.ep_info_pointcloud)
 
         # 接收控制命令并进行反馈
-        self.__suber_command = tbk_manager.subscriber(name="tz_agv", msg_name="tz_agz_command", tag="command", callback_func=self.get_command_then_positionPID)
+        self.suber_command = tbk_manager.subscriber(name="tz_agv", msg_name="tz_agz_command", tag="command", callback_func=self.get_command_then_positionPID)
 
         # pid
-        self.__wheels_pid = [PositionPID() for _ in range(3)]
+        self.wheels_pid = [PositionPID() for _ in range(3)]
 
         # tbk
         self.pub_register()
@@ -79,6 +83,11 @@ class SimulatorBox(BaseBox):
         # 激光雷达
         self.lidar_camera_canvas = CanvasMuJoCo(parent=self.tag, size=self.size, mj_model=self.mj_model, mj_data=self.mj_data, camid=self.lidar_camera_id)
         dpg.hide_item(self.lidar_camera_canvas.group_tag)
+
+        from ui.components.Canvas2D import Canvas2D
+
+        self.cvs = Canvas2D(parent=self.tag, size=(600, 400), format=dpg.mvFormat_Float_rgb)
+        self.texture_id = self.cvs.texture_register((400, 600))
 
     def destroy(self):
         super().destroy()
@@ -105,14 +114,14 @@ class SimulatorBox(BaseBox):
         status_imu.orientation.x, status_imu.orientation.y, status_imu.orientation.z, status_imu.orientation.w = status[0]
         status_imu.angular_velocity.x, status_imu.angular_velocity.y, status_imu.angular_velocity.z = status[1]
         status_imu.linear_acceleration.x, status_imu.linear_acceleration.y, status_imu.linear_acceleration.z = status[2]
-        self.__puber_status_imu.publish(status_imu.SerializeToString())
+        self.puber_status_imu.publish(status_imu.SerializeToString())
 
         # actor
         status = get_info_actor(self.mj_model, self.mj_data)
         for state in status:
             status_actor = actor_info_pb2.ActorInfo()
             status_actor.actor_name, status_actor.joint_name, status_actor.torque = state
-            self.__puber_status_actor.publish(status_actor.SerializeToString())
+            self.puber_status_actor.publish(status_actor.SerializeToString())
 
         # jointstate
         status = get_info_jointstate(self.mj_model, self.mj_data)
@@ -123,7 +132,7 @@ class SimulatorBox(BaseBox):
             status_jointstate.velocity.angular.wx, status_jointstate.velocity.angular.wy, status_jointstate.velocity.angular.wz = state[2][:3]
             status_jointstate.velocity.linear.vx, status_jointstate.velocity.linear.vy, status_jointstate.velocity.linear.vz = state[2][3:]
             # status_jointstate.effort = state[3]
-            self.__puber_status_jointstate.publish(status_jointstate.SerializeToString())
+            self.puber_status_jointstate.publish(status_jointstate.SerializeToString())
 
     # ========== 控制 ==========
     def get_command_then_positionPID(self, msg):
@@ -139,7 +148,7 @@ class SimulatorBox(BaseBox):
             mujoco.mj_name2id(self.mj_model, mujoco.mjtObj.mjOBJ_JOINT, "left_wheel_rolling_joint"),
             mujoco.mj_name2id(self.mj_model, mujoco.mjtObj.mjOBJ_JOINT, "right_wheel_rolling_joint"),
         ]
-        print(wheels)
+        # print(wheels)
 
         vx, vz, w = pickle.loads(msg)
 
@@ -149,16 +158,16 @@ class SimulatorBox(BaseBox):
         for wheel in wheels:
             current_velocity.append(self.mj_data.qvel[wheel])
         for wheel_num in range(len(wheels)):
-            self.mj_data.ctrl[wheel_num] = self.__wheels_pid[wheel_num].update(current_velocity[wheel_num], target_velocity[wheel_num])
+            self.mj_data.ctrl[wheel_num] = self.wheels_pid[wheel_num].update(current_velocity[wheel_num], target_velocity[wheel_num])
         # self.mj_data.ctrl[0] = self.__wheels_pid[0].update(current_velocity[0], target_velocity[0])
         # self.mj_data.ctrl[1] = self.__wheels_pid[1].update(current_velocity[1], target_velocity[1])
         # self.mj_data.ctrl[2] = self.__wheels_pid[2].update(current_velocity[2], target_velocity[2])
 
     # ========== lidar ==========
-    # def rot_cam(self, rot_speed):
-    #     euler = la.quat_to_euler(self.mj_model.cam_quat[self.now_camera])
-    #     euler = ((euler[0] + rot_speed) % (2 * np.pi), *euler[1:])
-    #     self.mj_model.cam_quat[self.now_camera] = la.quat_from_euler(euler, order="YXZ")
+    def rot_cam(self, rot_speed):
+        euler = la.quat_to_euler(self.mj_model.cam_quat[self.now_camera])
+        euler = ((euler[0] + rot_speed) % (2 * np.pi), *euler[1:])
+        self.mj_model.cam_quat[self.now_camera] = la.quat_from_euler(euler, order="YXZ")
 
     def rotate_camera_by_degrees(self, degrees):
 
@@ -172,7 +181,7 @@ class SimulatorBox(BaseBox):
         euler = ((euler[0] + radians) % (2 * np.pi), *euler[1:])
 
         # Update the camera's quaternion with the new euler angles
-        self.mj_model.cam_quat[self.now_camera] = la.quat_from_euler(euler, order="YXZ")
+        self.mj_model.cam_quat[self.lidar_camera_id] = la.quat_from_euler(euler, order="YXZ")
 
     def update(self):
         # mujoco 步进
@@ -181,7 +190,7 @@ class SimulatorBox(BaseBox):
         # 雷达：通过深度图获取雷达信息
         if self.lidar_camera_canvas.frame_depth is None:
             return
-        # self.rotate_camera_by_degrees(30)
+        self.rotate_camera_by_degrees(30)
 
         non_linear_depth_buffer = self.lidar_camera_canvas.frame_depth[:, :, 0]
         linear_depth_buffer = st.nonlinear_to_linear_depth(non_linear_depth_buffer, 0.1, 10)
@@ -207,12 +216,32 @@ class SimulatorBox(BaseBox):
         for i in range(0, num_points, batch_size):
             batch_points = points[i : i + batch_size]
             serialized_points = pickle.dumps(batch_points)
-            self.__puber_pointcloud.publish(serialized_points)
+            self.puber_pointcloud.publish(serialized_points)
 
-        # 更新 camera
-        self.free_camera_canvas.update()
-        self.fix_camera_canvas.update()
-        self.lidar_camera_canvas.update()
+        # 更新 camera & 传输图像
+        free_camera_img = self.free_camera_canvas.update()
+        free_camera_image = image_pb2.Image()
+        _, compressed_img = cv2.imencode(".jpg", free_camera_img, [cv2.IMWRITE_JPEG_QUALITY, 80])
+
+        # img_array = np.frombuffer(compressed_img, dtype=np.uint8)
+        # img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+        # # 转换BGR to RGB
+        # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+        # print(img.shape)
+
+        # self.cvs.texture_update(self.texture_id, img)
+
+        free_camera_image.img = compressed_img.tobytes()
+        self.puber_free_camera_image.publish(free_camera_image.SerializeToString())
+
+        # image = cv2.imdecode(compressed_img, cv2.IMREAD_COLOR)
+
+        fix_camera_img = self.fix_camera_canvas.update()
+        fix_camera_img = [type(fix_camera_img), len(fix_camera_img), fix_camera_img]
+
+        lidar_camera_img = self.lidar_camera_canvas.update()
+        lidar_camera_img = [type(lidar_camera_img), len(lidar_camera_img), lidar_camera_img]
 
         # 返回数据
         self.get_status_and_publish()
