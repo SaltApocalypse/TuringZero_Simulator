@@ -83,7 +83,6 @@ class EtcdClient:
 
     def update_pub_msg_type(self):
         msg_info = self.get_message_info()
-        print(msg_info)
         for k, v in msg_info["pubs"].items():
             info = (v.ep_info.name, v.ep_info.msg_name)
             msg_type = v.ep_info.msg_type
