@@ -171,8 +171,8 @@ class SimulatorBox(BaseBox):
         接受位置PID控制指令并执行
         NOTE: 仅针对AGV小车！
 
-        @param
-        - msg: 接受到的命令 (vx, vz, w)
+        Args:
+            msg: 接受到的命令 (vx, vz, w)
         """
         wheels = [
             mujoco.mj_name2id(self.mj_model, mujoco.mjtObj.mjOBJ_JOINT, "front_wheel_rolling_joint"),

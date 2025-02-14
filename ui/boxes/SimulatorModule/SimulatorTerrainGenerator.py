@@ -87,10 +87,10 @@ class TerrainGenerator:
         output_file: str = "scene_terrain.xml",
     ) -> None:
         """
-        @param
-        - folder_path: 文件夹路径
-        - model_file: 模型文件名
-        - output_file: 输出模型文件名
+        Args:
+            folder_path (str): 文件夹路径
+            model_file (str): 模型文件名
+            output_file (str): 输出模型文件名
         """
         # 设置路径
         self.folder_path = folder_path
@@ -119,11 +119,11 @@ class TerrainGenerator:
         """
         添加物体
 
-        @param
-        - position: 位置
-        - euler: 欧拉角
-        - size: 尺寸
-        - geo_type : "box", "plane", "sphere", "capsule", "ellipsoid", "cylinder"
+        Args:
+            position (list[3]): 位置
+            euler (list[3]): 欧拉角
+            size (list[2]): 尺寸
+            geo_type (str): "box", "plane", "sphere", "capsule", "ellipsoid", "cylinder"
         """
         geo = xml_et.SubElement(self.worldbody, "geom")
         geo.attrib["pos"] = list_to_str(position)
@@ -195,19 +195,19 @@ class TerrainGenerator:
         """
         生成柏林噪声深度图
 
-        @param
-        - position: 高度场的位置，列表格式 [x, y, z]
-        - euler: 高度场的姿态，欧拉角表示，列表格式 [roll, pitch, yaw]
-        - size: 高度场的宽度和长度，列表格式 [width, length]
-        - height_scale: 高度场的最大高度
-        - negative_height: 高度场在z轴负方向的高度
-        - image_width: 高度场图像的宽度
-        - image_height: 高度场图像的高度
-        - smooth: 平滑尺度，用于柏林噪声生成
-        - perlin_octaves: 柏林噪声的倍频数
-        - perlin_persistence: 柏林噪声的持久性
-        - perlin_lacunarity: 柏林噪声的空隙性
-        - output_hfield_image: 输出的高度场图像文件名
+        Args:
+            position: 高度场的位置，列表格式 [x, y, z]
+            euler: 高度场的姿态，欧拉角表示，列表格式 [roll, pitch, yaw]
+            size: 高度场的宽度和长度，列表格式 [width, length]
+            height_scale: 高度场的最大高度
+            negative_height: 高度场在z轴负方向的高度
+            image_width: 高度场图像的宽度
+            image_height: 高度场图像的高度
+            smooth: 平滑尺度，用于柏林噪声生成
+            perlin_octaves: 柏林噪声的倍频数
+            perlin_persistence: 柏林噪声的持久性
+            perlin_lacunarity: 柏林噪声的空隙性
+            output_hfield_image: 输出的高度场图像文件名
         """
 
         # Generating height field based on perlin noise
@@ -247,16 +247,16 @@ class TerrainGenerator:
         """
         从图像生成高度场并添加到仿真环境中
 
-        @param
-        - position: 高度场的位置，列表格式 [x, y, z]
-        - euler: 高度场的姿态，欧拉角表示，列表格式 [roll, pitch, yaw]
-        - size: 高度场的宽度和长度，列表格式 [width, length]
-        - height_scale: 高度场的最大高度
-        - negative_height: 高度场在z轴负方向的高度
-        - input_img: 输入的高度场图像文件路径
-        - output_hfield_image: 输出的高度场图像文件名
-        - image_scale: 图像缩放比例，列表格式 [scale_x, scale_y]
-        - invert_gray: 是否反转灰度图像
+        Args:
+            position: 高度场的位置，列表格式 [x, y, z]
+            euler: 高度场的姿态，欧拉角表示，列表格式 [roll, pitch, yaw]
+            size: 高度场的宽度和长度，列表格式 [width, length]
+            height_scale: 高度场的最大高度
+            negative_height: 高度场在z轴负方向的高度
+            input_img: 输入的高度场图像文件路径
+            output_hfield_image: 输出的高度场图像文件名
+            image_scale: 图像缩放比例，列表格式 [scale_x, scale_y]
+            invert_gray: 是否反转灰度图像
         """
 
         input_image = cv2.imread(input_img)  # 替换为你的图像文件路径
@@ -284,12 +284,14 @@ class TerrainGenerator:
     def Save(self, output_file: str = None):
         """
         编辑完成后保存 xml 文件
+        NOTE: 这个 `self.folder_path` 写在这里应该指向该项目的 `static/models/turingzero_agv` （见 Ln 333）
+              这里这样添加个参数会很挠头不过为了用着方便先这样摆着了 #FIXME:
 
-        @param
-        - output_file: 自定义输出文件名，路径为 self.folder_path
+        Args:
+            output_file (str): 自定义输出文件名，路径为 self.folder_path
 
-        @raise
-        - ValueError: 当没有设置输出路径时
+        Raises:
+            ValueError: 当没有设置输出路径时
         """
         if self.output_path is None and output_file is None:
             raise ValueError("No vaild output path.")
@@ -307,20 +309,20 @@ def get_random_position(size: float):
     """
     生成一个随机二维平面坐标（z轴为0）
 
-    @param
-    - size: 生成坐标的范围限制 (-size, size)
+    Args:
+        size (float): 生成坐标的范围限制 (-size, size)
 
-    @return
-    - list: 生成的坐标 [x, y, z]
+    Returns:
+        list[3]: 生成的坐标 [x, y, z]
     """
 
     def ran(size: float, positive: bool):
         """
         生成一个随机数字，如果 positive 为 True 则为正数、
 
-        @param
-        - size: 同上
-        - positive: False 为可能生成负数，True 为仅生成正数
+        Args:
+            size (float): 同上
+            positive (bool): False 为可能生成负数，True 为仅生成正数
         """
         return random.random() * size * ((-1 if random.random() <= 0.5 else 1) if not positive else 1)
 
